@@ -16,7 +16,6 @@ export function activate(context: vscode.ExtensionContext) {
 	vscode.commands.registerCommand('morejs.refresh', () => jsonOutlineProvider.refresh());
 	vscode.commands.registerCommand('morejs.refreshNode', offset => jsonOutlineProvider.refresh(offset));
 	vscode.commands.registerCommand('morejs.renameNode', offset => jsonOutlineProvider.rename(offset));
-	vscode.commands.registerCommand('extension.openJsonSelection', range => jsonOutlineProvider.select(range));
 
 
 	// The command has been defined in the package.json file
