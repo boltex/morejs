@@ -33,3 +33,18 @@ export interface ILeoFile {
     vnodes: IVNode[];
     tnodes: ITNode[];
 }
+
+export interface PNode {
+    header: string;
+    children: PNode[];
+    parent?: PNode;
+    body: string;
+}
+
+/**
+ * * Icon path names used in leoNodes for rendering in treeview
+ */
+export interface Icon {
+    light: string;
+    dark: string;
+}

@@ -18,7 +18,7 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:morejs.helloWorld"
+		"*"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
@@ -54,6 +54,11 @@
 					"id": "jsonOutline",
 					"name": "Json Outline",
 					"when": "jsonOutlineEnabled"
+				},
+				{
+					"id": "jsOutline",
+					"name": "More Outline",
+					"when": "jsOutlineEnabled"
 				}
 			]
 		},
