@@ -35,6 +35,15 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.window.showInformationMessage('Hello World from morejs!');
 	});
 
+	// this._leoFileSystem = new LeoBodyProvider(this);
+	// // * Start body pane system
+	// if (!this._bodyFileSystemStarted) {
+	//     this._context.subscriptions.push(
+	//         vscode.workspace.registerFileSystemProvider(Constants.URI_LEO_SCHEME, this._leoFileSystem, { isCaseSensitive: true })
+	//     );
+	//     this._bodyFileSystemStarted = true;
+	// }
+
 	context.subscriptions.push(disposable);
 }
 

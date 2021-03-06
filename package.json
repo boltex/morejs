@@ -62,6 +62,12 @@
 				}
 			]
 		},
+		"viewsWelcome": [
+			{
+				"view": "jsonOutline",
+				"contents": "Select a JSON file to view the outline and edit node labels"
+			}
+		],
 		"menus": {
 			"commandPalette": [
 				{

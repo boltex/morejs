@@ -1,8 +1,6 @@
 import * as vscode from 'vscode';
 import { JsNode } from './jsNode';
-import { ProviderResult } from "vscode";
 import { Icon, PNode } from './types';
-
 
 export class JsOutlineProvider implements vscode.TreeDataProvider<JsNode> {
     private _onDidChangeTreeData: vscode.EventEmitter<JsNode | undefined> = new vscode.EventEmitter<JsNode | undefined>();
@@ -24,18 +22,27 @@ export class JsOutlineProvider implements vscode.TreeDataProvider<JsNode> {
         {
             header: "node3",
             body: "node3 body",
-            children: []
+            children: [
+                {
+                    header: "childNode4",
+                    body: "node4 body",
+                    children: []
+                },
+                {
+                    header: "childNode5",
+                    body: "node5 body",
+                    children: []
+                }
+            ]
         },
     ];
 
     constructor(private _context: vscode.ExtensionContext) {
         this._icons = this._buildNodeIconPaths(_context);
+        console.log('Starting MOREJS tree provider');
+
     }
 
-
-    /**
-     * * Refresh the whole outline
-     */
     public refreshTreeRoot(): void {
         this._onDidChangeTreeData.fire(undefined);
     }
@@ -52,16 +59,11 @@ export class JsOutlineProvider implements vscode.TreeDataProvider<JsNode> {
         }
     }
 
-    public getParent(element: JsNode): ProviderResult<JsNode> | null {
-        // Buttons are just a list, as such, entries are always child of root so return null
-        return null;
-    }
-
     private _buildNodeIconPaths(p_context: vscode.ExtensionContext): Icon[] {
         return Array(16).fill("").map((p_val, p_index) => {
             return {
-                light: p_context.asAbsolutePath("resources/light/box" + this._padNumber2(p_index) + ".svg"),
-                dark: p_context.asAbsolutePath("resources/dark/box" + this._padNumber2(p_index) + ".svg")
+                light: p_context.asAbsolutePath("resources/light/box" + ("0" + p_index).slice(-2) + ".svg"),
+                dark: p_context.asAbsolutePath("resources/dark/box" + ("0" + p_index).slice(-2) + ".svg")
             };
         });
     }
@@ -80,10 +82,6 @@ export class JsOutlineProvider implements vscode.TreeDataProvider<JsNode> {
             });
         }
         return w_children;
-    }
-
-    private _padNumber2(p_number: number): string {
-        return ("0" + p_number).slice(-2);
     }
 
 }

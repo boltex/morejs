@@ -11,6 +11,7 @@ export class JsonOutlineProvider implements vscode.TreeDataProvider<number> {
     private text!: string;
     private editor!: vscode.TextEditor;
     private autoRefresh: boolean | undefined = true;
+    private isJsonDoc: boolean = false;
 
     constructor(private context: vscode.ExtensionContext) {
         vscode.window.onDidChangeActiveTextEditor(() => this.onActiveEditorChanged());
@@ -21,7 +22,9 @@ export class JsonOutlineProvider implements vscode.TreeDataProvider<number> {
             this.autoRefresh = vscode.workspace.getConfiguration('jsonOutline').get('autorefresh');
         });
         this.onActiveEditorChanged();
-        console.log('Starting tree');
+        vscode.commands.executeCommand('setContext', 'jsonOutlineEnabled', true);
+
+        console.log('Starting JSON tree provider');
 
     }
 
@@ -62,16 +65,24 @@ export class JsonOutlineProvider implements vscode.TreeDataProvider<number> {
         if (vscode.window.activeTextEditor) {
             if (vscode.window.activeTextEditor.document.uri.scheme === 'file') {
                 const enabled = vscode.window.activeTextEditor.document.languageId === 'json' || vscode.window.activeTextEditor.document.languageId === 'jsonc';
-                vscode.commands.executeCommand('setContext', 'jsonOutlineEnabled', enabled);
+                // vscode.commands.executeCommand('setContext', 'jsonOutlineEnabled', enabled);
                 if (enabled) {
+                    this.isJsonDoc = enabled;
+                    this.refresh();
+                } else if (this.isJsonDoc) {
+                    // if not already false
+                    this.isJsonDoc = false;
                     this.refresh();
                 }
-                console.log('enable');
-
+                console.log(enabled ? 'enable' : 'disable');
             }
         } else {
+            if (this.isJsonDoc) {
+                this.isJsonDoc = false;
+                this.refresh();
+            }
             console.log('disable');
-            vscode.commands.executeCommand('setContext', 'jsonOutlineEnabled', false);
+            // vscode.commands.executeCommand('setContext', 'jsonOutlineEnabled', false);
         }
     }
 
@@ -98,6 +109,9 @@ export class JsonOutlineProvider implements vscode.TreeDataProvider<number> {
     }
 
     getChildren(offset?: number): Thenable<number[]> {
+        if (!this.isJsonDoc) {
+            return Promise.resolve([]);
+        }
         if (offset) {
             const path = json.getLocation(this.text, offset).path;
             const node = json.findNodeAtLocation(this.tree, path);
