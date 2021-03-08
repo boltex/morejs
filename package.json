@@ -28,6 +28,10 @@
 				"title": "Hello World"
 			},
 			{
+				"command": "morejs.selectNode",
+				"title": "Select Node"
+			},
+			{
 				"command": "morejs.refresh",
 				"title": "Refresh",
 				"icon": {

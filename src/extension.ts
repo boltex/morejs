@@ -1,16 +1,13 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import { JsNode } from './jsNode';
 import { JsonOutlineProvider } from './jsonOutline';
 import { JsOutlineProvider } from './jsOutline';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
-
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "morejs" is now active!');
 
 	// TREEVIEW SAMPLE EXAMPLE
 	const jsonOutlineProvider = new JsonOutlineProvider(context);
@@ -35,6 +32,9 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.window.showInformationMessage('Hello World from morejs!');
 	});
 
+
+
+
 	// this._leoFileSystem = new LeoBodyProvider(this);
 	// // * Start body pane system
 	// if (!this._bodyFileSystemStarted) {
@@ -43,6 +43,18 @@ export function activate(context: vscode.ExtensionContext) {
 	//     );
 	//     this._bodyFileSystemStarted = true;
 	// }
+
+
+	vscode.commands.registerCommand('morejs.selectNode', (p_JsNode: JsNode) => {
+		console.log('SHOW BODY: ', p_JsNode.pnode.body);
+	});
+
+
+
+	console.log('STARTED MOREJS');
+	vscode.commands.getCommands().then(
+		p_commands => console.log(p_commands.filter(p_cmd => p_cmd.startsWith('_')))
+	);
 
 	context.subscriptions.push(disposable);
 }
