@@ -33,8 +33,6 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 
-
-
 	// this._leoFileSystem = new LeoBodyProvider(this);
 	// // * Start body pane system
 	// if (!this._bodyFileSystemStarted) {
@@ -49,6 +47,25 @@ export function activate(context: vscode.ExtensionContext) {
 		console.log('SHOW BODY: ', p_JsNode.pnode.body);
 	});
 
+	function triggerBodySave() {
+		console.log('triggerBodySave');
+
+	}
+	function _onDocumentChanged(p_event: vscode.TextDocumentChangeEvent) {
+		// ".length" check necessary, see https://github.com/microsoft/vscode/issues/50344
+		if (p_event.contentChanges.length) {
+			console.log('_onDocumentChanged scheme:', p_event.document.uri.scheme);
+		}
+	}
+
+	// * Triggers when a different text editor/vscode window changed focus or visibility, or dragged
+	// This is also what triggers after drag and drop, see '_onChangeEditorViewColumn'
+	vscode.window.onDidChangeTextEditorViewColumn(() => triggerBodySave());
+	vscode.window.onDidChangeVisibleTextEditors(() => triggerBodySave());
+	vscode.window.onDidChangeWindowState(() => triggerBodySave());
+
+	// * React when typing and changing body pane
+	vscode.workspace.onDidChangeTextDocument(p_event => _onDocumentChanged(p_event));
 
 
 	console.log('STARTED MOREJS');
