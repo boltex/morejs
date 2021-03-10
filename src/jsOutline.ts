@@ -7,7 +7,7 @@ export class JsOutlineProvider implements vscode.TreeDataProvider<JsNode> {
 
     private _icons: Icon[];
 
-    private _model: PNode[] = [
+    public model: PNode[] = [
         {
             header: "node1",
             body: "node1 body",
@@ -55,7 +55,7 @@ export class JsOutlineProvider implements vscode.TreeDataProvider<JsNode> {
         if (element) {
             return Promise.resolve(this._jsNodeArray(element.pnode.children));
         } else {
-            return Promise.resolve(this._jsNodeArray(this._model));
+            return Promise.resolve(this._jsNodeArray(this.model));
         }
     }
 

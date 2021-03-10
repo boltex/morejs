@@ -1,3 +1,4 @@
+import * as path from 'path';
 import * as vscode from "vscode";
 
 /**
@@ -43,6 +44,7 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
 
     public writeFile(p_uri: vscode.Uri, p_content: Uint8Array, p_options: { create: boolean, overwrite: boolean }): void {
         //
+        // this._fireSoon({ type: vscode.FileChangeType.Changed, uri: p_uri });
     }
 
     public rename(p_oldUri: vscode.Uri, p_newUri: vscode.Uri, p_options: { overwrite: boolean }): void {
@@ -50,7 +52,8 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
     }
 
     public delete(uri: vscode.Uri): void {
-        //
+        let w_dirname = uri.with({ path: path.posix.dirname(uri.path) }); // dirname is just a slash "/"
+        this._fireSoon({ type: vscode.FileChangeType.Changed, uri: w_dirname }, { uri, type: vscode.FileChangeType.Deleted });
     }
 
     public copy(p_uri: vscode.Uri): void {
