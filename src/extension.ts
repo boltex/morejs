@@ -46,7 +46,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	vscode.commands.registerCommand('morejs.selectNode', (p_JsNode: JsNode) => {
 		console.log('SHOW BODY GNX: ', p_JsNode.pnode.gnx);
-		bodyUri = strToMoreUri("");// via global
+		bodyUri = strToMoreUri(p_JsNode.pnode.gnx);// via global
 		showBody();
 		jsOutlineProvider.lastSelectedNode = p_JsNode;
 	});
