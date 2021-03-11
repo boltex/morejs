@@ -10,32 +10,42 @@ export class JsOutlineProvider implements vscode.TreeDataProvider<JsNode> {
     public model: PNode[] = [
         {
             header: "node1",
-            body: "node1 body",
+            gnx: "1",
             children: []
         },
         {
             header: "node2",
-            body: "node2 body",
+            gnx: "2",
             children: []
         },
 
         {
             header: "node3",
-            body: "node3 body",
+            gnx: "3",
             children: [
                 {
                     header: "childNode4",
-                    body: "node4 body",
+                    gnx: "4",
                     children: []
                 },
                 {
                     header: "childNode5",
-                    body: "node5 body",
+                    gnx: "5",
                     children: []
                 }
             ]
         },
     ];
+
+    public bodies: { [key: string]: string } = {
+        "1": "node1 body",
+        "2": "node2 body",
+        "3": "node3 body",
+        "4": "node4 body",
+        "5": "node5 body"
+    };
+
+    public lastSelectedNode: JsNode | undefined;
 
     constructor(private _context: vscode.ExtensionContext) {
         this._icons = this._buildNodeIconPaths(_context);
@@ -72,11 +82,12 @@ export class JsOutlineProvider implements vscode.TreeDataProvider<JsNode> {
         const w_children: JsNode[] = [];
         if (p_children && p_children.length) {
             p_children.forEach(p_node => {
+                let w_body = this.bodies[p_node.gnx];
                 w_children.push(new JsNode(p_node.header,
-                    vscode.TreeItemCollapsibleState.None,
+                    p_node.children.length ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
                     p_node,
                     false,
-                    !!p_node.body && !!p_node.body.length,
+                    !!w_body && !!w_body.length,
                     this._icons
                 ));
             });

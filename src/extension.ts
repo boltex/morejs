@@ -37,7 +37,7 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 
-	const _leoFileSystem = new JsBodyProvider();
+	const _leoFileSystem = new JsBodyProvider(jsOutlineProvider);
 	// // * Start body pane system
 
 	context.subscriptions.push(
@@ -45,7 +45,10 @@ export function activate(context: vscode.ExtensionContext) {
 	);
 
 	vscode.commands.registerCommand('morejs.selectNode', (p_JsNode: JsNode) => {
-		console.log('SHOW BODY: ', p_JsNode.pnode.body);
+		console.log('SHOW BODY GNX: ', p_JsNode.pnode.gnx);
+		bodyUri = strToMoreUri("");// via global
+		showBody();
+		jsOutlineProvider.lastSelectedNode = p_JsNode;
 	});
 
 	function showBody(): Promise<vscode.TextEditor> {
@@ -60,7 +63,7 @@ export function activate(context: vscode.ExtensionContext) {
 			};
 
 			return vscode.window.showTextDocument(bodyTextDocument, w_showOptions).then(w_bodyEditor => {
-				// w_bodyEditor.options.lineNumbers = OFFSET ; // TODO : #38 if position is in an derived file node show relative position
+				// w_bodyEditor.options.lineNumbers = OFFSET ;
 				return Promise.resolve(w_bodyEditor);
 			});
 		});

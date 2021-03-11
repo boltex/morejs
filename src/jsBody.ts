@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as vscode from "vscode";
+import { JsOutlineProvider } from './jsOutline';
 
 /**
  * * Body panes implementation as a file system using "leo" as a scheme identifier
@@ -13,7 +14,7 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
     private _onDidChangeFileEmitter = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
     readonly onDidChangeFile: vscode.Event<vscode.FileChangeEvent[]> = this._onDidChangeFileEmitter.event;
 
-    constructor() {
+    constructor(private _jsOutline: JsOutlineProvider) {
         //
     }
 
@@ -24,6 +25,8 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
     }
 
     public readFile(p_uri: vscode.Uri): Thenable<Uint8Array> {
+        console.log("read", p_uri);
+
         return Promise.resolve(Buffer.from(""));
     }
 
