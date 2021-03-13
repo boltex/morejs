@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as vscode from "vscode";
-import { JsOutlineProvider } from './jsOutline';
+import { MoreOutlineProvider } from './moreOutline';
 
 /**
  * * Body panes implementation as a file system using "leo" as a scheme identifier
@@ -14,13 +14,12 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
     private _onDidChangeFileEmitter = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
     readonly onDidChangeFile: vscode.Event<vscode.FileChangeEvent[]> = this._onDidChangeFileEmitter.event;
 
-    constructor(private _jsOutline: JsOutlineProvider) {
+    constructor(private _jsOutline: MoreOutlineProvider) {
         //
     }
 
-
     public readDirectory(p_uri: vscode.Uri): Thenable<[string, vscode.FileType][]> {
-        console.log("readDirectory", p_uri);
+        console.log("readDirectory", p_uri.fsPath);
 
         const w_directory: [string, vscode.FileType][] = [];
         return Promise.resolve(w_directory);
@@ -47,7 +46,7 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
     }
 
     public watch(p_resource: vscode.Uri): vscode.Disposable {
-        console.log("watch", p_resource);
+        console.log("watch", p_resource.fsPath);
 
         // const w_gnx = utils.leoUriToStr(p_resource);
         // if (!this._openedBodiesGnx.includes(w_gnx)) {
@@ -66,6 +65,8 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
     }
 
     public writeFile(p_uri: vscode.Uri, p_content: Uint8Array, p_options: { create: boolean, overwrite: boolean }): void {
+        console.log("writeFile", p_uri.fsPath);
+
         //
         // this._fireSoon({ type: vscode.FileChangeType.Changed, uri: p_uri });
     }

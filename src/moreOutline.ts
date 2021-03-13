@@ -1,9 +1,21 @@
 import * as vscode from 'vscode';
-import { JsNode } from './jsNode';
-import { Icon, PNode } from './types';
 
-export class JsOutlineProvider implements vscode.TreeDataProvider<JsNode> {
-    private _onDidChangeTreeData: vscode.EventEmitter<JsNode | undefined> = new vscode.EventEmitter<JsNode | undefined>();
+interface PNode {
+    header: string;
+    gnx: string;
+    children: PNode[];
+    parent?: PNode
+}
+/**
+ * * Icon path names used in leoNodes for rendering in treeview
+ */
+interface Icon {
+    light: string;
+    dark: string;
+}
+
+export class MoreOutlineProvider implements vscode.TreeDataProvider<MoreNode> {
+    private _onDidChangeTreeData: vscode.EventEmitter<MoreNode | undefined> = new vscode.EventEmitter<MoreNode | undefined>();
 
     private _icons: Icon[];
 
@@ -18,7 +30,6 @@ export class JsOutlineProvider implements vscode.TreeDataProvider<JsNode> {
             gnx: "2",
             children: []
         },
-
         {
             header: "node3",
             gnx: "3",
@@ -34,10 +45,10 @@ export class JsOutlineProvider implements vscode.TreeDataProvider<JsNode> {
                     children: []
                 }
             ]
-        },
+        }
     ];
 
-    public bodies: { [key: string]: string } = {
+    public bodies: { [gnx: string]: string } = {
         "1": "node1 body",
         "2": "node2 body",
         "3": "node3 body",
@@ -45,7 +56,7 @@ export class JsOutlineProvider implements vscode.TreeDataProvider<JsNode> {
         "5": "node5 body"
     };
 
-    public lastSelectedNode: JsNode | undefined;
+    public lastSelectedNode: MoreNode | undefined;
 
     constructor(private _context: vscode.ExtensionContext) {
         this._icons = this._buildNodeIconPaths(_context);
@@ -57,11 +68,11 @@ export class JsOutlineProvider implements vscode.TreeDataProvider<JsNode> {
         this._onDidChangeTreeData.fire(undefined);
     }
 
-    public getTreeItem(element: JsNode): Thenable<JsNode> | JsNode {
+    public getTreeItem(element: MoreNode): Thenable<MoreNode> | MoreNode {
         return element;
     }
 
-    public getChildren(element?: JsNode): Thenable<JsNode[]> {
+    public getChildren(element?: MoreNode): Thenable<MoreNode[]> {
         if (element) {
             return Promise.resolve(this._jsNodeArray(element.pnode.children));
         } else {
@@ -78,12 +89,12 @@ export class JsOutlineProvider implements vscode.TreeDataProvider<JsNode> {
         });
     }
 
-    private _jsNodeArray(p_children: PNode[]): JsNode[] {
-        const w_children: JsNode[] = [];
+    private _jsNodeArray(p_children: PNode[]): MoreNode[] {
+        const w_children: MoreNode[] = [];
         if (p_children && p_children.length) {
             p_children.forEach(p_node => {
                 let w_body = this.bodies[p_node.gnx];
-                w_children.push(new JsNode(p_node.header,
+                w_children.push(new MoreNode(p_node.header,
                     p_node.children.length ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
                     p_node,
                     false,
@@ -93,6 +104,32 @@ export class JsOutlineProvider implements vscode.TreeDataProvider<JsNode> {
             });
         }
         return w_children;
+    }
+
+}
+
+export class MoreNode extends vscode.TreeItem {
+
+    constructor(
+        public label: string, // Node headline
+        public collapsibleState: vscode.TreeItemCollapsibleState, // Computed in receiver/creator
+        public pnode: PNode,
+        public dirty: boolean,
+        public hasBody: boolean,
+        private _icons: Icon[]
+
+    ) {
+        super(label, collapsibleState);
+        this.command = {
+            command: "morejs.selectNode",
+            title: '',
+            arguments: [this]
+        };
+    }
+
+    // @ts-ignore
+    public get iconPath(): Icon {
+        return this._icons[0];
     }
 
 }

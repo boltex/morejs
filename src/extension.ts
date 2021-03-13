@@ -1,54 +1,45 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import { JsBodyProvider } from './jsBody';
-import { JsNode } from './jsNode';
+import { JsBodyProvider } from './moreBody';
 import { JsonOutlineProvider } from './jsonOutline';
-import { JsOutlineProvider } from './jsOutline';
+import { MoreOutlineProvider, MoreNode } from './moreOutline';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
-	const scheme: string = "more";
-	let bodyTextDocument: vscode.TextDocument | undefined;
-	let bodyUri: vscode.Uri = strToMoreUri("");
+	console.log('Starting morejs activation');
 
 	// TREEVIEW SAMPLE EXAMPLE
 	const jsonOutlineProvider = new JsonOutlineProvider(context);
-	vscode.window.registerTreeDataProvider('jsonOutline', jsonOutlineProvider);
-	vscode.commands.registerCommand('morejs.refresh', () => jsonOutlineProvider.refresh());
-	vscode.commands.registerCommand('morejs.refreshNode', offset => jsonOutlineProvider.refresh(offset));
-	vscode.commands.registerCommand('morejs.renameNode', offset => jsonOutlineProvider.rename(offset));
 
-	// MOREJS  test
-	const jsOutlineProvider = new JsOutlineProvider(context);
-	vscode.window.registerTreeDataProvider('jsOutline', jsOutlineProvider);
+	context.subscriptions.push(vscode.window.registerTreeDataProvider('jsonOutline', jsonOutlineProvider));
+	context.subscriptions.push(vscode.commands.registerCommand('morejs.refresh', () => jsonOutlineProvider.refresh()));
+	context.subscriptions.push(vscode.commands.registerCommand('morejs.refreshNode', offset => jsonOutlineProvider.refresh(offset)));
+	context.subscriptions.push(vscode.commands.registerCommand('morejs.renameNode', offset => jsonOutlineProvider.rename(offset)));
+
+	// MOREJS Body pane implementation
+	const scheme: string = "more";
+	let bodyTextDocument: vscode.TextDocument | undefined;
+	let _bodyLastChangedDocument: vscode.TextDocument | undefined; // Only set in _onDocumentChanged
+
+	let bodyUri: vscode.Uri = strToMoreUri("");
+
+	const moreOutlineProvider = new MoreOutlineProvider(context);
+	context.subscriptions.push(vscode.window.registerTreeDataProvider('jsOutline', moreOutlineProvider));
 	vscode.commands.executeCommand('setContext', 'jsOutlineEnabled', true);
 
-
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('morejs.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from morejs!');
-	});
-
-
-	const _leoFileSystem = new JsBodyProvider(jsOutlineProvider);
-	// // * Start body pane system
+	const _leoFileSystem = new JsBodyProvider(moreOutlineProvider);
 
 	context.subscriptions.push(
 		vscode.workspace.registerFileSystemProvider(scheme, _leoFileSystem, { isCaseSensitive: true })
 	);
 
-	vscode.commands.registerCommand('morejs.selectNode', (p_JsNode: JsNode) => {
+	vscode.commands.registerCommand('morejs.selectNode', (p_JsNode: MoreNode) => {
 		console.log('SHOW BODY GNX: ', p_JsNode.pnode.gnx);
 		bodyUri = strToMoreUri(p_JsNode.pnode.gnx);// via global
 		showBody();
-		jsOutlineProvider.lastSelectedNode = p_JsNode;
+		moreOutlineProvider.lastSelectedNode = p_JsNode;
 	});
 
 	function showBody(): Promise<vscode.TextEditor> {
@@ -70,9 +61,26 @@ export function activate(context: vscode.ExtensionContext) {
 
 	}
 
-	function triggerBodySave() {
-		console.log('triggerBodySave');
+	function _bodySaveDocument(p_document: vscode.TextDocument, p_forcedVsCodeSave?: boolean): Promise<boolean> {
+		console.log('SAVE BODY BACK TO NODE!');
 
+		return Promise.resolve(true);
+	}
+
+	function triggerBodySave(p_forcedVsCodeSave?: boolean): Promise<boolean> {
+		// * Save body to Leo if a change has been made to the body 'document' so far
+		if (_bodyLastChangedDocument && _bodyLastChangedDocument.isDirty) {
+			const w_document = _bodyLastChangedDocument; // backup for bodySaveDocument before reset
+			_bodyLastChangedDocument = undefined; // reset to make falsy
+			return _bodySaveDocument(w_document, p_forcedVsCodeSave);
+		} else {
+			return Promise.resolve(false);
+		}
+
+		//  else {
+		// 	_bodyLastChangedDocument = undefined;
+		// 	return _bodySaveSelection(); // not dirty so save cursor selection only
+		// }
 	}
 	function _onDocumentChanged(p_event: vscode.TextDocumentChangeEvent) {
 		// ".length" check necessary, see https://github.com/microsoft/vscode/issues/50344
@@ -101,12 +109,7 @@ export function activate(context: vscode.ExtensionContext) {
 	// * React to opening of any file in vscode
 	// vscode.workspace.onDidOpenTextDocument(p_document => _onDidOpenTextDocument(p_document));
 
-	console.log('STARTED MOREJS');
-	vscode.commands.getCommands().then(
-		p_commands => console.log(p_commands.filter(p_cmd => p_cmd.startsWith('_')))
-	);
-
-	context.subscriptions.push(disposable);
+	console.log('Finished activating morejs');
 }
 
 // this method is called when your extension is deactivated

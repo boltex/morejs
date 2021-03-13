@@ -24,10 +24,6 @@
 	"contributes": {
 		"commands": [
 			{
-				"command": "morejs.helloWorld",
-				"title": "Hello World"
-			},
-			{
 				"command": "morejs.selectNode",
 				"title": "Select Node"
 			},
@@ -73,11 +69,7 @@
 			}
 		],
 		"menus": {
-			"commandPalette": [
-				{
-					"command": "morejs.helloWorld"
-				}
-			],
+			"commandPalette": [],
 			"view/title": [
 				{
 					"command": "morejs.refresh",
