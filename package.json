@@ -58,7 +58,7 @@
 				{
 					"id": "jsOutline",
 					"name": "More Outline",
-					"when": "jsOutlineEnabled"
+					"when": "moreOutlineEnabled"
 				}
 			]
 		},
