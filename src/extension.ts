@@ -5,8 +5,6 @@ import { JsBodyProvider } from './moreBody';
 import { JsonOutlineProvider } from './jsonOutline';
 import { MoreOutlineProvider, MoreNode } from './moreOutline';
 
-// this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 	console.log('Starting morejs activation');
 
@@ -29,7 +27,7 @@ export function activate(context: vscode.ExtensionContext) {
 	const scheme: string = "more";
 	let bodyTextDocument: vscode.TextDocument | undefined;
 	let _bodyLastChangedDocument: vscode.TextDocument | undefined; // Only set in _onDocumentChanged
-	let bodyUri: vscode.Uri = strToMoreUri("");
+	let bodyUri: vscode.Uri = vscode.Uri.parse("more:/");
 	const moreOutlineProvider = new MoreOutlineProvider(context);
 	const _leoFileSystem = new JsBodyProvider(moreOutlineProvider);
 
@@ -45,7 +43,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	function selectNode(p_JsNode: MoreNode): void {
 		console.log('SELECT NODE GNX: ', p_JsNode.pnode.gnx);
-		bodyUri = strToMoreUri(p_JsNode.pnode.gnx);// via global
+		bodyUri = vscode.Uri.parse("more:/" + p_JsNode.pnode.gnx);
 		showBody();
 		moreOutlineProvider.lastSelectedNode = p_JsNode;
 	}
@@ -60,12 +58,20 @@ export function activate(context: vscode.ExtensionContext) {
 		});
 	}
 
-	function _bodySaveDocument(p_document: vscode.TextDocument, p_forcedVsCodeSave?: boolean): Promise<boolean> {
+	function _bodySaveDocument(p_document: vscode.TextDocument, p_forcedVsCodeSave?: boolean): Thenable<boolean> {
 		console.log('SAVE BODY BACK TO NODE!');
-		return Promise.resolve(true);
+
+		moreOutlineProvider.bodies[p_document.uri.fsPath.substr(1)] = p_document.getText();
+
+		if (p_forcedVsCodeSave) {
+			return p_document.save(); // USED INTENTIONALLY: This trims trailing spaces
+		}
+		return Promise.resolve(p_document.isDirty);
+
+
 	}
 
-	function triggerBodySave(p_forcedVsCodeSave?: boolean): Promise<boolean> {
+	function triggerBodySave(p_forcedVsCodeSave?: boolean): Thenable<boolean> {
 		// * Save body to Leo if a change has been made to the body 'document' so far
 		if (_bodyLastChangedDocument && _bodyLastChangedDocument.isDirty) {
 			const w_document = _bodyLastChangedDocument; // backup for bodySaveDocument before reset
@@ -94,7 +100,3 @@ export function activate(context: vscode.ExtensionContext) {
 
 // this method is called when your extension is deactivated
 export function deactivate() { }
-
-function strToMoreUri(p_str: string): vscode.Uri {
-	return vscode.Uri.parse("more:/" + p_str);
-}

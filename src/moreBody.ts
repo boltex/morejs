@@ -2,11 +2,12 @@ import * as path from 'path';
 import * as vscode from "vscode";
 import { MoreOutlineProvider } from './moreOutline';
 
-/**
- * * Body panes implementation as a file system using "leo" as a scheme identifier
- * TODO : Replace save/rename procedure to overcome API change for undos.
- * Saving and renaming prevents flickering and prevents undos to 'traverse through' different gnx
- */
+interface BodyTimeInfo {
+    gnx: string;
+    ctime: number;
+    mtime: number;
+}
+
 export class JsBodyProvider implements vscode.FileSystemProvider {
 
     // * An event to signal that a resource has been changed
@@ -14,9 +15,45 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
     private _onDidChangeFileEmitter = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
     readonly onDidChangeFile: vscode.Event<vscode.FileChangeEvent[]> = this._onDidChangeFileEmitter.event;
 
-    constructor(private _jsOutline: MoreOutlineProvider) {
-        //
+    private _selectedBody: BodyTimeInfo = { gnx: "", ctime: 0, mtime: 0 };
+
+    // * List of currently opened body panes gnx (from 'watch' & 'dispose' methods)
+    private _openedBodiesGnx: string[] = [];
+
+    constructor(private _jsOutline: MoreOutlineProvider) { }
+
+    public setBodyTime(p_uri: vscode.Uri, p_time?: number): void {
+        const w_gnx = this._moreUriToStr(p_uri);
+        this._selectedBody = {
+            gnx: w_gnx,
+            ctime: 0,
+            mtime: !isNaN(p_time!) ? p_time! : Date.now()
+        };
     }
+
+    public refreshPossibleGnxList(): string[] {
+        return Object.keys(this._jsOutline.bodies);
+    }
+
+    public getExpiredGnxList(): string[] {
+        const w_possibleGnxList = this.refreshPossibleGnxList();
+        const w_gnxToClose: string[] = [];
+        this._openedBodiesGnx.forEach(p_openedGnx => {
+            if (!w_possibleGnxList.includes(p_openedGnx)) {
+                w_gnxToClose.push(p_openedGnx);
+            }
+        });
+        this.fireDeleteExpiredGnx(w_gnxToClose); // ! DELETE NOW ?
+        return w_gnxToClose;
+    }
+
+    public fireDeleteExpiredGnx(p_gnxList: string[]): void {
+        p_gnxList.forEach(p_gnx => {
+            const w_uri: vscode.Uri = vscode.Uri.parse("more:/" + p_gnx);
+            this._fireSoon({ uri: w_uri, type: vscode.FileChangeType.Deleted });
+        });
+    }
+
 
     public readDirectory(p_uri: vscode.Uri): Thenable<[string, vscode.FileType][]> {
         console.log("readDirectory", p_uri.fsPath);
@@ -33,6 +70,7 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
 
     public stat(p_uri: vscode.Uri): vscode.FileStat | Thenable<vscode.FileStat> {
         console.log("stat", p_uri);
+
         return Promise.resolve(
             {
                 type: vscode.FileType.File,
@@ -48,19 +86,16 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
     public watch(p_resource: vscode.Uri): vscode.Disposable {
         console.log("watch", p_resource.fsPath);
 
-        // const w_gnx = utils.leoUriToStr(p_resource);
-        // if (!this._openedBodiesGnx.includes(w_gnx)) {
-        //     this._openedBodiesGnx.push(w_gnx); // add gnx
-        // }
-        // return new vscode.Disposable(() => {
-        //     const w_position = this._openedBodiesGnx.indexOf(w_gnx); // find and remove it
-        //     if (w_position > -1) {
-        //         this._openedBodiesGnx.splice(w_position, 1);
-        //     }
-        // });
-        const temp = p_resource.fsPath;
+        const w_gnx = this._moreUriToStr(p_resource);
+        if (!this._openedBodiesGnx.includes(w_gnx)) {
+            this._openedBodiesGnx.push(w_gnx); // add gnx
+        }
         return new vscode.Disposable(() => {
-            console.log('Disposed of ', temp);
+            const w_position = this._openedBodiesGnx.indexOf(w_gnx); // find and remove it
+            if (w_position > -1) {
+                console.log('removed from _openedBodiesGnx: ', w_gnx);
+                this._openedBodiesGnx.splice(w_position, 1);
+            }
         });
     }
 
@@ -68,6 +103,8 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
         console.log("writeFile", p_uri.fsPath);
 
         //
+
+
         // this._fireSoon({ type: vscode.FileChangeType.Changed, uri: p_uri });
     }
 
@@ -76,6 +113,7 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
     }
 
     public delete(uri: vscode.Uri): void {
+        console.log("delete", uri.fsPath);
         let w_dirname = uri.with({ path: path.posix.dirname(uri.path) }); // dirname is just a slash "/"
         this._fireSoon({ type: vscode.FileChangeType.Changed, uri: w_dirname }, { uri, type: vscode.FileChangeType.Deleted });
     }
