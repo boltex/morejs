@@ -88,7 +88,17 @@
 					"group": "inline"
 				}
 			]
-		}
+		},
+		"resourceLabelFormatters": [
+			{
+				"scheme": "more",
+				"formatting": {
+					"label": "MORE: BODY",
+					"separator": "/",
+					"workspaceSuffix": ""
+				}
+			}
+		]
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
