@@ -58,8 +58,6 @@ export class MoreOutlineProvider implements vscode.TreeDataProvider<MoreNode> {
         '5': 'node5 body',
     };
 
-    public lastSelectedNode: MoreNode | undefined;
-
     constructor(private _context: vscode.ExtensionContext) {
         this._icons = this._buildNodeIconPaths(_context);
         console.log('Starting MOREJS tree provider');
