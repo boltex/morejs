@@ -130,7 +130,8 @@ export class MemFS implements vscode.FileSystemProvider {
         parent.entries.delete(basename);
         parent.mtime = Date.now();
         parent.size -= 1;
-        this._fireSoon({ type: vscode.FileChangeType.Changed, uri: dirname }, { uri, type: vscode.FileChangeType.Deleted });
+        this._fireSoon({ type: vscode.FileChangeType.Changed, uri: dirname },
+            { uri, type: vscode.FileChangeType.Deleted });
     }
 
     createDirectory(uri: vscode.Uri): void {
@@ -142,7 +143,8 @@ export class MemFS implements vscode.FileSystemProvider {
         parent.entries.set(entry.name, entry);
         parent.mtime = Date.now();
         parent.size += 1;
-        this._fireSoon({ type: vscode.FileChangeType.Changed, uri: dirname }, { type: vscode.FileChangeType.Created, uri });
+        this._fireSoon({ type: vscode.FileChangeType.Changed, uri: dirname },
+            { type: vscode.FileChangeType.Created, uri });
     }
 
     // --- lookup

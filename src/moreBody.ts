@@ -84,16 +84,19 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
     }
 
     public watch(p_resource: vscode.Uri): vscode.Disposable {
-        console.log("watch", p_resource.fsPath);
-
         const w_gnx = this._moreUriToStr(p_resource);
+
         if (!this._openedBodiesGnx.includes(w_gnx)) {
+            console.warn('MORE fs watch putin _openedBodiesGnx:', p_resource.fsPath);
             this._openedBodiesGnx.push(w_gnx); // add gnx
+        } else {
+            console.warn('MORE fs watch: already in _openedBodiesGnx:', p_resource.fsPath);
+
         }
         return new vscode.Disposable(() => {
             const w_position = this._openedBodiesGnx.indexOf(w_gnx); // find and remove it
             if (w_position > -1) {
-                console.log('removed from _openedBodiesGnx: ', w_gnx);
+                console.log('MORE fs removed from _openedBodiesGnx: ', w_gnx);
                 this._openedBodiesGnx.splice(w_position, 1);
             }
         });
@@ -101,29 +104,33 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
 
     public writeFile(p_uri: vscode.Uri, p_content: Uint8Array, p_options: { create: boolean, overwrite: boolean }): void {
         console.log("writeFile", p_uri.fsPath);
-
-        //
-
-
-        // this._fireSoon({ type: vscode.FileChangeType.Changed, uri: p_uri });
+        this._fireSoon({ type: vscode.FileChangeType.Changed, uri: p_uri });
     }
 
     public rename(p_oldUri: vscode.Uri, p_newUri: vscode.Uri, p_options: { overwrite: boolean }): void {
-        //
+        console.log('SHOULD NOT RENAME!');
+
+        this._fireSoon(
+            { type: vscode.FileChangeType.Deleted, uri: p_oldUri },
+            { type: vscode.FileChangeType.Created, uri: p_newUri }
+        );
     }
 
     public delete(uri: vscode.Uri): void {
         console.log("delete", uri.fsPath);
         let w_dirname = uri.with({ path: path.posix.dirname(uri.path) }); // dirname is just a slash "/"
-        this._fireSoon({ type: vscode.FileChangeType.Changed, uri: w_dirname }, { uri, type: vscode.FileChangeType.Deleted });
+        this._fireSoon(
+            { type: vscode.FileChangeType.Changed, uri: w_dirname },
+            { uri, type: vscode.FileChangeType.Deleted }
+        );
     }
 
     public copy(p_uri: vscode.Uri): void {
-        //
+        console.error('MORE fs copy Should not be called');
     }
 
     public createDirectory(p_uri: vscode.Uri): void {
-        //
+        console.error('MORE fs createDirectory Should not be called');
     }
 
     private _moreUriToStr(p_uri: vscode.Uri): string {
