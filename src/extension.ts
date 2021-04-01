@@ -3,7 +3,7 @@
 import * as vscode from 'vscode';
 import { JsBodyProvider } from './moreBody';
 import { JsonOutlineProvider } from './jsonOutline';
-import { MoreOutlineProvider, MoreNode } from './moreOutline';
+import { MoreOutlineProvider } from './moreOutline';
 import { More } from './more';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -26,12 +26,12 @@ export function activate(context: vscode.ExtensionContext) {
 
     // MOREJS BODY PANE IMPLEMENTATION *********************************************************
     const moreOutlineProvider = new MoreOutlineProvider(context);
-    const _leoFileSystem = new JsBodyProvider(moreOutlineProvider);
+    const moreFileSystem = new JsBodyProvider(moreOutlineProvider);
 
-    const more = new More(moreOutlineProvider);
+    const more = new More(moreOutlineProvider, moreFileSystem);
 
     subPush(regTree('jsOutline', moreOutlineProvider));
-    subPush(regFileSys('more', _leoFileSystem, { isCaseSensitive: true }));
+    subPush(regFileSys('more', moreFileSystem, { isCaseSensitive: true }));
     subPush(regCmd('morejs.selectNode', (p_JsNode) => more.selectNode(p_JsNode)));
 
     vscode.commands.executeCommand('setContext', 'moreOutlineEnabled', true);

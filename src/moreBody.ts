@@ -87,7 +87,7 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
         const w_gnx = this._moreUriToStr(p_resource);
 
         if (!this._openedBodiesGnx.includes(w_gnx)) {
-            console.warn('MORE fs watch putin _openedBodiesGnx:', p_resource.fsPath);
+            console.log('MORE fs watch put in _openedBodiesGnx:', p_resource.fsPath);
             this._openedBodiesGnx.push(w_gnx); // add gnx
         } else {
             console.warn('MORE fs watch: already in _openedBodiesGnx:', p_resource.fsPath);

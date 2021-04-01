@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { JsBodyProvider } from './moreBody';
 import { MoreNode, MoreOutlineProvider } from './moreOutline';
 /**
  * * Orchestrates More implementation into vscode
@@ -10,15 +11,23 @@ export class More {
     public lastSelectedNode: MoreNode | undefined;
 
     // Body global state variables
-    public bodyUri: vscode.Uri = vscode.Uri.parse('more:/');
+    private _bodyUri: vscode.Uri = vscode.Uri.parse('more:/');
+    get bodyUri(): vscode.Uri {
+        return this._bodyUri;
+    }
+    set bodyUri(p_uri: vscode.Uri) {
+        this._moreFileSystem.setBodyTime(p_uri);
+        this._bodyUri = p_uri;
+    }
 
     private _bodyLastChangedDocument: vscode.TextDocument | undefined; // Only set in _onDocumentChanged
     private _bodyTextDocument: vscode.TextDocument | undefined; // Set when selected in tree by user, or opening a Leo file in showBody. and by _locateOpenedBody.
     private _bodyMainSelectionColumn: vscode.ViewColumn | undefined; // Column of last body 'textEditor' found, set to 1
 
-
-
-    constructor(private _moreOutlineProvider: MoreOutlineProvider) {
+    constructor(
+        private _moreOutlineProvider: MoreOutlineProvider,
+        private _moreFileSystem: JsBodyProvider
+    ) {
         vscode.window.onDidChangeActiveTextEditor((p_event) => this.triggerBodySave()); // also fires when the active editor becomes undefined
         vscode.window.onDidChangeTextEditorViewColumn(() => this.triggerBodySave()); // also triggers after drag and drop
         vscode.window.onDidChangeVisibleTextEditors(() => this.triggerBodySave()); // window.visibleTextEditors changed
@@ -42,10 +51,10 @@ export class More {
         this.lastSelectedNode = p_node;
         this.bodyUri = vscode.Uri.parse('more:/' + p_node.pnode.gnx);
 
-        this._tryApplyNodeToBody(p_node, !!p_aside, false, true);
+        this._tryApplyNodeToBody(p_node, !!p_aside, false);
     }
 
-    private _tryApplyNodeToBody(p_node: MoreNode, p_aside: boolean, p_showBodyKeepFocus: boolean, p_force_open?: boolean): void {
+    private _tryApplyNodeToBody(p_node: MoreNode, p_aside: boolean, p_showBodyKeepFocus: boolean): void {
 
         this.triggerBodySave();
         this.lastSelectedNode = p_node;
@@ -103,7 +112,7 @@ export class More {
         return Promise.resolve(vscode.workspace.openTextDocument(this.bodyUri)).then((p_document) => {
             this._bodyTextDocument = p_document;
             const w_showOptions: vscode.TextDocumentShowOptions = {
-                viewColumn: 1,
+                viewColumn: p_aside ? vscode.ViewColumn.Beside : this._bodyMainSelectionColumn,
                 preserveFocus: false,
                 preview: true,
             };
@@ -117,6 +126,7 @@ export class More {
 
     private _locateOpenedBody(p_gnx: string): boolean {
         let w_found = false;
+        this._bodyMainSelectionColumn = 1;
         // * Only gets to visible editors, not every tab per editor
         vscode.window.visibleTextEditors.forEach(p_textEditor => {
             if (p_textEditor.document.uri.fsPath.substr(1) === p_gnx) {
