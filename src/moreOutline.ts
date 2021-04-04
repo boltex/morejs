@@ -1,11 +1,15 @@
 import * as vscode from 'vscode';
 
+/**
+ * * Structure for testing basic body pane switching without other operations
+ */
 interface PNode {
     header: string;
     gnx: string;
     children: PNode[];
     parent?: PNode;
 }
+
 /**
  * * Icon path names used in leoNodes for rendering in treeview
  */
@@ -15,13 +19,16 @@ interface Icon {
 }
 
 export class MoreOutlineProvider implements vscode.TreeDataProvider<MoreNode> {
-    private _onDidChangeTreeData: vscode.EventEmitter<
-        MoreNode | undefined
-    > = new vscode.EventEmitter<MoreNode | undefined>();
+
+    private _onDidChangeTreeData: vscode.EventEmitter<MoreNode | undefined | null | void> = new vscode.EventEmitter<MoreNode | undefined | null | void>();
+    readonly onDidChangeTreeData: vscode.Event<MoreNode | undefined | null | void> = this._onDidChangeTreeData.event;
+
 
     private _icons: Icon[];
 
-    public model: PNode[] = [
+    public modelId: number;
+    public model: PNode[][] = [];
+    public model1: PNode[] = [
         {
             header: 'node1',
             gnx: '1',
@@ -49,6 +56,35 @@ export class MoreOutlineProvider implements vscode.TreeDataProvider<MoreNode> {
             ],
         },
     ];
+    public model2: PNode[] = [
+        {
+            header: 'node6',
+            gnx: '6',
+            children: [],
+        },
+        {
+            header: 'node7',
+            gnx: '7',
+            children: [
+                {
+                    header: 'node8',
+                    gnx: '8',
+                    children: [
+                        {
+                            header: 'childNode9',
+                            gnx: '9',
+                            children: [],
+                        },
+                    ],
+                },
+            ],
+        },
+        {
+            header: 'childNode10',
+            gnx: '10',
+            children: [],
+        }
+    ];
 
     public bodies: { [gnx: string]: string } = {
         '1': 'node1 body',
@@ -56,15 +92,33 @@ export class MoreOutlineProvider implements vscode.TreeDataProvider<MoreNode> {
         '3': 'node3 body',
         '4': 'node4 body',
         '5': 'node5 body',
+        '6': 'node6 body',
+        '7': 'node7 body',
+        '8': 'node8 body',
+        '9': 'node9 body',
+        '10': 'node10 body',
     };
 
     constructor(private _context: vscode.ExtensionContext) {
         this._icons = this._buildNodeIconPaths(_context);
+        this.modelId = 0;
+        this.model.push(this.model1);
+        this.model.push(this.model2);
         console.log('Starting MOREJS tree provider');
     }
 
+    public switchModel() {
+        if (this.modelId) {
+            this.modelId = 0;
+        } else {
+            this.modelId = 1;
+        }
+    }
+
     public refreshTreeRoot(): void {
-        this._onDidChangeTreeData.fire(undefined);
+        console.log('REFRESH');
+
+        this._onDidChangeTreeData.fire();
     }
 
     public getTreeItem(element: MoreNode): Thenable<MoreNode> | MoreNode {
@@ -72,10 +126,14 @@ export class MoreOutlineProvider implements vscode.TreeDataProvider<MoreNode> {
     }
 
     public getChildren(element?: MoreNode): Thenable<MoreNode[]> {
+
         if (element) {
+            console.log('REFRESH a node');
+
             return Promise.resolve(this._nodeArray(element.pnode.children));
         } else {
-            return Promise.resolve(this._nodeArray(this.model));
+            console.log('REFRESH Root!!', this.modelId);
+            return Promise.resolve(this._nodeArray(this.model[this.modelId]));
         }
     }
 

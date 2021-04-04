@@ -24,6 +24,10 @@
 	"contributes": {
 		"commands": [
 			{
+				"command": "morejs.helloWorld",
+				"title": "Hello World Test"
+			},
+			{
 				"command": "morejs.selectNode",
 				"title": "Select Node"
 			},

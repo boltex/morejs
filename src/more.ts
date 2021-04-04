@@ -37,6 +37,12 @@ export class More {
         vscode.workspace.onDidChangeTextDocument((p_event) => this._onDocumentChanged(p_event)); // typing and changing body
     }
 
+    public switchDocument(): void {
+        console.log('Switch DOCUMENT');
+        this._moreOutlineProvider.switchModel();
+        this._moreOutlineProvider.refreshTreeRoot();
+    }
+
     /**
      * * Click or press enter on a node
      * @returns a promise resolving on a text editor of it's body pane.

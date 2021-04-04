@@ -32,6 +32,7 @@ export function activate(context: vscode.ExtensionContext) {
     subPush(regTree('jsOutline', moreOutlineProvider));
     subPush(regFileSys('more', moreFileSystem, { isCaseSensitive: true }));
     subPush(regCmd('morejs.selectNode', (p_JsNode) => more.selectNode(p_JsNode)));
+    subPush(regCmd('morejs.helloWorld', () => more.switchDocument()));
 
     vscode.commands.executeCommand('setContext', 'moreOutlineEnabled', true);
 
