@@ -24,10 +24,9 @@ export function activate(context: vscode.ExtensionContext) {
     subPush(regCmd('morejs.refreshNode', (offset) => jsonOutlineProvider.refresh(offset)));
     subPush(regCmd('morejs.renameNode', (offset) => jsonOutlineProvider.rename(offset)));
 
-    // MOREJS BODY PANE IMPLEMENTATION *********************************************************
+    // MOREJS IMPLEMENTATION *********************************************************
     const moreOutlineProvider = new MoreOutlineProvider(context);
     const moreFileSystem = new JsBodyProvider(moreOutlineProvider);
-
     const more = new More(moreOutlineProvider, moreFileSystem);
 
     subPush(regTree('jsOutline', moreOutlineProvider));

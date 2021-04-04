@@ -20,8 +20,10 @@ export class More {
         this._bodyUri = p_uri;
     }
 
-    private _bodyLastChangedDocument: vscode.TextDocument | undefined; // Only set in _onDocumentChanged
-    private _bodyTextDocument: vscode.TextDocument | undefined; // Set when selected in tree by user, or opening a Leo file in showBody. and by _locateOpenedBody.
+    // (should be same as _bodyTextDocument if no multiple gnx body support?)
+    private _bodyLastChangedDocument: vscode.TextDocument | undefined; // Only set in _onDocumentChanged WHEN USER TYPES.
+
+    private _bodyTextDocument: vscode.TextDocument | undefined; // Set when selected in tree by user, or opening a 'more scheme' file in showBody. and by _locateOpenedBody.
     private _bodyMainSelectionColumn: vscode.ViewColumn | undefined; // Column of last body 'textEditor' found, set to 1
 
     constructor(
@@ -40,7 +42,7 @@ export class More {
      * @returns a promise resolving on a text editor of it's body pane.
      * TODO : Fix undefined return value to only return the promise to a text editor.
      */
-    public selectNode(p_node: MoreNode, p_aside?: boolean): Promise<vscode.TextEditor> | undefined {
+    public selectNode(p_node: MoreNode, p_aside?: boolean): Thenable<vscode.TextEditor> | undefined {
         console.log('selectNode GNX: ', p_node.pnode.gnx);
 
         if (p_node === this.lastSelectedNode) {
@@ -49,64 +51,61 @@ export class More {
         }
 
         this.lastSelectedNode = p_node;
-        this.bodyUri = vscode.Uri.parse('more:/' + p_node.pnode.gnx);
 
         this._tryApplyNodeToBody(p_node, !!p_aside, false);
     }
 
-    private _tryApplyNodeToBody(p_node: MoreNode, p_aside: boolean, p_showBodyKeepFocus: boolean): void {
-
+    private _tryApplyNodeToBody(p_node: MoreNode, p_aside: boolean, p_showBodyKeepFocus: boolean): Thenable<vscode.TextEditor> {
         this.triggerBodySave();
         this.lastSelectedNode = p_node;
         if (this._bodyTextDocument) {
-            if (!this._bodyTextDocument.isClosed && this._locateOpenedBody(p_node.pnode.gnx)) {
-                // this gnx still opened and visible
-                // this.bodyUri = utils.strToLeoUri(p_params.node.gnx); // ? NECESSARY ?
-                this.showBody(p_aside, p_showBodyKeepFocus);
-            } else {
-                this._switchBody(p_node.pnode.gnx).then(() => {
-                    this.showBody(p_aside, p_showBodyKeepFocus);
-                });
+            if (this._bodyTextDocument.isClosed || !this._locateOpenedBody(p_node.pnode.gnx)) {
+                // if needs switching
+                if (this.bodyUri.fsPath.substr(1) !== p_node.pnode.gnx) {
+                    return this._bodyTextDocument.save()
+                        .then(() => {
+                            return this._switchBody(p_node.pnode.gnx);
+                        }).then(() => {
+                            return this.showBody(p_aside, p_showBodyKeepFocus);
+                        });
+
+                }
             }
         } else {
-
+            // first time?
             this.bodyUri = vscode.Uri.parse('more:/' + p_node.pnode.gnx);
-            this.showBody(p_aside, p_showBodyKeepFocus);
-
         }
-
+        return this.showBody(p_aside, p_showBodyKeepFocus);
     }
 
     private _switchBody(p_newGnx: string): Thenable<boolean> {
-        if (this._bodyTextDocument) {
-            return this._bodyTextDocument.save()
-                // .then((p_result) => {
-                //     const w_edit = new vscode.WorkspaceEdit();
-                //     _leoFileSystem.setRenameTime(p_newGnx);
-                //     w_edit.renameFile(
-                //         bodyUri, // Old URI from last node
-                //         utils.strToLeoUri(p_newGnx), // New URI from selected node
-                //         { overwrite: true }
-                //     );
-                //     return vscode.workspace.applyEdit(w_edit);
-                // })
-                .then(p_result => {
-                    const w_oldUri: vscode.Uri = this.bodyUri;
-                    // * Old is now set to new!
-                    this.bodyUri = vscode.Uri.parse('more:/' + p_newGnx);
 
-                    // TODO : CLEAR UNDO HISTORY AND FILE HISTORY
-                    if (w_oldUri.fsPath !== this.bodyUri.fsPath) {
-                        vscode.commands.executeCommand('vscode.removeFromRecentlyOpened', w_oldUri.path);
-                    }
-                    return Promise.resolve(p_result);
-                });
-        } else {
-            return Promise.resolve(false);
-        }
+        console.log('switchBody to ' + p_newGnx);
+
+        const w_oldUri: vscode.Uri = this.bodyUri;
+
+        const w_edit = new vscode.WorkspaceEdit();
+
+        // * Set timestamps ?
+        // this._leoFileSystem.setRenameTime(p_newGnx);
+
+        w_edit.deleteFile(w_oldUri, { ignoreIfNotExists: true });
+
+        // Promise to Delete first sync (as thenable),
+        // tagged along with automatically removeFromRecentlyOpened in parallel
+        return vscode.workspace.applyEdit(w_edit)
+            .then(() => {
+                // Set new uri and remove from 'Recently opened'
+                this.bodyUri = vscode.Uri.parse('more:/' + p_newGnx);
+                // async, so don't wait for this to finish
+                if (w_oldUri.fsPath !== this.bodyUri.fsPath) {
+                    vscode.commands.executeCommand('vscode.removeFromRecentlyOpened', w_oldUri.path);
+                }
+                return Promise.resolve(true); // Resolving right away
+            });
     }
 
-    public showBody(p_aside: boolean, p_preserveFocus?: boolean): Promise<vscode.TextEditor> {
+    public showBody(p_aside: boolean, p_preserveFocus?: boolean): Thenable<vscode.TextEditor> {
         console.log('showBODY!');
 
         return Promise.resolve(vscode.workspace.openTextDocument(this.bodyUri)).then((p_document) => {
@@ -167,10 +166,14 @@ export class More {
         // 	return _bodySaveSelection(); // not dirty so save cursor selection only
         // }
     }
+
     private _onDocumentChanged(p_event: vscode.TextDocumentChangeEvent) {
         // ".length" check necessary, see https://github.com/microsoft/vscode/issues/50344
-        if (p_event.contentChanges.length && p_event.document.uri.scheme === 'more') {
+        if (this.lastSelectedNode && p_event.contentChanges.length && p_event.document.uri.scheme === 'more') {
             console.log('MORE DOCUMENT EDITED!');
+            // * There was an actual change on a Leo Body by the user
+            this._bodyLastChangedDocument = p_event.document;
+
         }
     }
 }
