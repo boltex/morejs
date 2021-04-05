@@ -37,6 +37,20 @@ export class More {
         vscode.workspace.onDidChangeTextDocument((p_event) => this._onDocumentChanged(p_event)); // typing and changing body
     }
 
+    public onChangeCollapsedState(p_event: vscode.TreeViewExpansionEvent<MoreNode>, p_expand: boolean, p_treeView: vscode.TreeView<MoreNode>): void {
+        this.triggerBodySave(true);
+        if (p_treeView.selection[0] && p_treeView.selection[0] === p_event.element) {
+            // * This happens if the tree selection is the same as the expanded/collapsed node: Just have Leo do the same
+            // Pass
+        } else {
+            // * This part only happens if the user clicked on the arrow without trying to select the node
+            // this._revealTreeViewNode(p_event.element, { select: true, focus: false }); // No force focus : it breaks collapse/expand when direct parent
+            this.selectNode(p_event.element, true);  // not waiting for a .then(...) so not to add any lag
+        }
+        // * if in leoIntegration send action to Leo to select & expand.
+
+    }
+
     public switchDocument(): void {
         console.log('Switch DOCUMENT');
         this._moreOutlineProvider.switchModel();

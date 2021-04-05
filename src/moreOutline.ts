@@ -18,11 +18,33 @@ interface Icon {
     dark: string;
 }
 
-export class MoreOutlineProvider implements vscode.TreeDataProvider<MoreNode> {
+export class MoreNode extends vscode.TreeItem {
+    constructor(
+        public label: string, // Node headline
+        public collapsibleState: vscode.TreeItemCollapsibleState, // Computed in receiver/creator
+        public pnode: PNode,
+        public dirty: boolean,
+        public hasBody: boolean,
+        private _icons: Icon[]
+    ) {
+        super(label, collapsibleState);
+        this.command = {
+            command: 'morejs.selectNode',
+            title: '',
+            arguments: [this],
+        };
+    }
 
-    private _onDidChangeTreeData: vscode.EventEmitter<MoreNode | undefined | null | void> = new vscode.EventEmitter<MoreNode | undefined | null | void>();
-    readonly onDidChangeTreeData: vscode.Event<MoreNode | undefined | null | void> = this._onDidChangeTreeData.event;
+    // @ts-ignore
+    public get iconPath(): Icon {
+        return this._icons[0];
+    }
+}
 
+export class MoreOutlineProvider implements vscode.TreeDataProvider<PNode> {
+
+    private _onDidChangeTreeData: vscode.EventEmitter<PNode | undefined | null | void> = new vscode.EventEmitter<PNode | undefined | null | void>();
+    readonly onDidChangeTreeData: vscode.Event<PNode | undefined | null | void> = this._onDidChangeTreeData.event;
 
     private _icons: Icon[];
 
@@ -102,6 +124,8 @@ export class MoreOutlineProvider implements vscode.TreeDataProvider<MoreNode> {
     constructor(private _context: vscode.ExtensionContext) {
         this._icons = this._buildNodeIconPaths(_context);
         this.modelId = 0;
+        this._buildParents(this.model1);
+        this._buildParents(this.model2);
         this.model.push(this.model1);
         this.model.push(this.model2);
         console.log('Starting MOREJS tree provider');
@@ -117,24 +141,37 @@ export class MoreOutlineProvider implements vscode.TreeDataProvider<MoreNode> {
 
     public refreshTreeRoot(): void {
         console.log('REFRESH');
-
         this._onDidChangeTreeData.fire();
     }
 
-    public getTreeItem(element: MoreNode): Thenable<MoreNode> | MoreNode {
-        return element;
+    public getTreeItem(element: PNode): MoreNode {
+        let w_body = this.bodies[element.gnx];
+        return new MoreNode(
+            element.header,
+            element.children.length
+                ? vscode.TreeItemCollapsibleState.Collapsed
+                : vscode.TreeItemCollapsibleState.None,
+            element,
+            false,
+            !!w_body && !!w_body.length,
+            this._icons
+        );
     }
 
-    public getChildren(element?: MoreNode): Thenable<MoreNode[]> {
-
+    public getChildren(element?: PNode): vscode.ProviderResult<PNode[]> {
         if (element) {
             console.log('REFRESH a node');
-
-            return Promise.resolve(this._nodeArray(element.pnode.children));
+            return element.children;
+            //return Promise.resolve(this._nodeArray(element.pnode.children));
         } else {
             console.log('REFRESH Root!!', this.modelId);
-            return Promise.resolve(this._nodeArray(this.model[this.modelId]));
+            return this.model[this.modelId];
+            //return Promise.resolve(this._nodeArray(this.model[this.modelId]));
         }
+    }
+
+    public getParent(p_node: PNode): vscode.ProviderResult<PNode> | null {
+        return p_node.parent;
     }
 
     private _buildNodeIconPaths(p_context: vscode.ExtensionContext): Icon[] {
@@ -173,27 +210,17 @@ export class MoreOutlineProvider implements vscode.TreeDataProvider<MoreNode> {
         }
         return w_children;
     }
-}
 
-export class MoreNode extends vscode.TreeItem {
-    constructor(
-        public label: string, // Node headline
-        public collapsibleState: vscode.TreeItemCollapsibleState, // Computed in receiver/creator
-        public pnode: PNode,
-        public dirty: boolean,
-        public hasBody: boolean,
-        private _icons: Icon[]
-    ) {
-        super(label, collapsibleState);
-        this.command = {
-            command: 'morejs.selectNode',
-            title: '',
-            arguments: [this],
-        };
+    /**
+     * Recursively set node's parent member.
+     * @param p_nodes Children array of nodes to have their parents set recursively.
+     * @param p_parent Current node being processed. Undefined if root node children.
+     */
+    private _buildParents(p_nodes: PNode[], p_parent?: PNode): void {
+        p_nodes.forEach(p_node => {
+            p_node.parent = p_parent;
+            this._buildParents(p_node.children, p_node);
+        });
     }
 
-    // @ts-ignore
-    public get iconPath(): Icon {
-        return this._icons[0];
-    }
 }

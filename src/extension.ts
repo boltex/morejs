@@ -27,9 +27,13 @@ export function activate(context: vscode.ExtensionContext) {
     // MOREJS IMPLEMENTATION *********************************************************
     const moreOutlineProvider = new MoreOutlineProvider(context);
     const moreFileSystem = new JsBodyProvider(moreOutlineProvider);
+
     const more = new More(moreOutlineProvider, moreFileSystem);
 
-    subPush(regTree('jsOutline', moreOutlineProvider));
+    const moreTreeView = vscode.window.createTreeView('jsOutline', { showCollapseAll: false, treeDataProvider: moreOutlineProvider });
+    // moreTreeView.onDidExpandElement((p_event => more.onChangeCollapsedState(p_event, true, moreTreeView)));
+    // moreTreeView.onDidCollapseElement((p_event => more.onChangeCollapsedState(p_event, false, moreTreeView)));
+    subPush(moreTreeView);
     subPush(regFileSys('more', moreFileSystem, { isCaseSensitive: true }));
     subPush(regCmd('morejs.selectNode', (p_JsNode) => more.selectNode(p_JsNode)));
     subPush(regCmd('morejs.helloWorld', () => more.switchDocument()));

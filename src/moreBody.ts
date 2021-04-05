@@ -69,7 +69,7 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
     }
 
     public stat(p_uri: vscode.Uri): vscode.FileStat | Thenable<vscode.FileStat> {
-        console.log("stat", p_uri);
+        console.log("stat", p_uri.fsPath);
 
         return Promise.resolve(
             {
