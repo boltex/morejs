@@ -1,14 +1,14 @@
 import * as vscode from 'vscode';
 import { JsBodyProvider } from './moreBody';
-import { MoreNode, MoreOutlineProvider } from './moreOutline';
+import { MoreOutlineProvider, PNode } from './moreOutline';
 /**
  * * Orchestrates More implementation into vscode
  */
 export class More {
 
 
-    // Outline global state variables
-    public lastSelectedNode: MoreNode | undefined;
+    // Selected node set in tree model or last selected by user
+    public lastSelectedNode: PNode | undefined;
 
     // Body global state variables
     private _bodyUri: vscode.Uri = vscode.Uri.parse('more:/');
@@ -37,7 +37,7 @@ export class More {
         vscode.workspace.onDidChangeTextDocument((p_event) => this._onDocumentChanged(p_event)); // typing and changing body
     }
 
-    public onChangeCollapsedState(p_event: vscode.TreeViewExpansionEvent<MoreNode>, p_expand: boolean, p_treeView: vscode.TreeView<MoreNode>): void {
+    public onChangeCollapsedState(p_event: vscode.TreeViewExpansionEvent<PNode>, p_expand: boolean, p_treeView: vscode.TreeView<PNode>): void {
         this.triggerBodySave(true);
         if (p_treeView.selection[0] && p_treeView.selection[0] === p_event.element) {
             // * This happens if the tree selection is the same as the expanded/collapsed node: Just have Leo do the same
@@ -45,7 +45,8 @@ export class More {
         } else {
             // * This part only happens if the user clicked on the arrow without trying to select the node
             // this._revealTreeViewNode(p_event.element, { select: true, focus: false }); // No force focus : it breaks collapse/expand when direct parent
-            this.selectNode(p_event.element, true);  // not waiting for a .then(...) so not to add any lag
+            p_treeView.reveal(p_event.element, { select: true, focus: false });
+            this.selectNode(p_event.element, true, false);  // not waiting for a .then(...) so not to add any lag
         }
         // * if in leoIntegration send action to Leo to select & expand.
 
@@ -62,11 +63,12 @@ export class More {
      * @returns a promise resolving on a text editor of it's body pane.
      * TODO : Fix undefined return value to only return the promise to a text editor.
      */
-    public selectNode(p_node: MoreNode, p_aside?: boolean): Thenable<vscode.TextEditor> | undefined {
-        console.log('selectNode GNX: ', p_node.pnode.gnx);
+    public selectNode(p_node: PNode, p_internalCall?: boolean, p_aside?: boolean): Thenable<vscode.TextEditor> | undefined {
+        console.log('selectNode GNX: ', p_node.gnx);
+        this.triggerBodySave();
 
         if (p_node === this.lastSelectedNode) {
-            this._locateOpenedBody(p_node.pnode.gnx);
+            this._locateOpenedBody(p_node.gnx);
             return this.showBody(!!p_aside); // Voluntary exit
         }
 
@@ -75,25 +77,24 @@ export class More {
         this._tryApplyNodeToBody(p_node, !!p_aside, false);
     }
 
-    private _tryApplyNodeToBody(p_node: MoreNode, p_aside: boolean, p_showBodyKeepFocus: boolean): Thenable<vscode.TextEditor> {
-        this.triggerBodySave();
+    private _tryApplyNodeToBody(p_node: PNode, p_aside: boolean, p_showBodyKeepFocus: boolean): Thenable<vscode.TextEditor> {
+        this.triggerBodySave(); // can be called directly so trigger body save also even if called in selectNode
         this.lastSelectedNode = p_node;
         if (this._bodyTextDocument) {
-            if (this._bodyTextDocument.isClosed || !this._locateOpenedBody(p_node.pnode.gnx)) {
+            if (this._bodyTextDocument.isClosed || !this._locateOpenedBody(p_node.gnx)) {
                 // if needs switching
-                if (this.bodyUri.fsPath.substr(1) !== p_node.pnode.gnx) {
+                if (this.bodyUri.fsPath.substr(1) !== p_node.gnx) {
                     return this._bodyTextDocument.save()
                         .then(() => {
-                            return this._switchBody(p_node.pnode.gnx);
+                            return this._switchBody(p_node.gnx);
                         }).then(() => {
                             return this.showBody(p_aside, p_showBodyKeepFocus);
                         });
-
                 }
             }
         } else {
             // first time?
-            this.bodyUri = vscode.Uri.parse('more:/' + p_node.pnode.gnx);
+            this.bodyUri = vscode.Uri.parse('more:/' + p_node.gnx);
         }
         return this.showBody(p_aside, p_showBodyKeepFocus);
     }

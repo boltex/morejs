@@ -1,13 +1,15 @@
 import * as vscode from 'vscode';
 
 /**
- * * Structure for testing basic body pane switching without other operations
+ * * Structural node type used by the model.
+ * (vscode needs TreeItem via getTreeItem in the TreeDataProvider)
  */
-interface PNode {
+export interface PNode {
     header: string;
     gnx: string;
     children: PNode[];
     parent?: PNode;
+    selected?: boolean;
 }
 
 /**
@@ -18,6 +20,9 @@ interface Icon {
     dark: string;
 }
 
+/**
+ * * Tree item type node that gets displayed by vscode
+ */
 export class MoreNode extends vscode.TreeItem {
     constructor(
         public label: string, // Node headline
@@ -31,7 +36,7 @@ export class MoreNode extends vscode.TreeItem {
         this.command = {
             command: 'morejs.selectNode',
             title: '',
-            arguments: [this],
+            arguments: [this.pnode],
         };
     }
 
@@ -41,6 +46,9 @@ export class MoreNode extends vscode.TreeItem {
     }
 }
 
+/**
+ * * Outline Provider for immutable test structures
+ */
 export class MoreOutlineProvider implements vscode.TreeDataProvider<PNode> {
 
     private _onDidChangeTreeData: vscode.EventEmitter<PNode | undefined | null | void> = new vscode.EventEmitter<PNode | undefined | null | void>();
@@ -48,6 +56,7 @@ export class MoreOutlineProvider implements vscode.TreeDataProvider<PNode> {
 
     private _icons: Icon[];
 
+    // * IMMUTABLE sample test outline structures. Each with predefined 'selected' node.
     public modelId: number;
     public model: PNode[][] = [];
     public model1: PNode[] = [
@@ -60,6 +69,7 @@ export class MoreOutlineProvider implements vscode.TreeDataProvider<PNode> {
             header: 'node2',
             gnx: '2',
             children: [],
+            selected: true // predefined as 'selected'.
         },
         {
             header: 'node3',
@@ -105,9 +115,11 @@ export class MoreOutlineProvider implements vscode.TreeDataProvider<PNode> {
             header: 'childNode10',
             gnx: '10',
             children: [],
+            selected: true // predefined as 'selected'.
         }
     ];
 
+    // MUTABLE text bodies to test modifications and display transitions.
     public bodies: { [gnx: string]: string } = {
         '1': 'node1 body',
         '2': 'node2 body',
