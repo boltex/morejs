@@ -28,6 +28,7 @@ export class More {
 
     constructor(
         private _moreOutlineProvider: MoreOutlineProvider,
+        private _moreTreeView: vscode.TreeView<PNode>,
         private _moreFileSystem: JsBodyProvider
     ) {
         vscode.window.onDidChangeActiveTextEditor((p_event) => this.triggerBodySave()); // also fires when the active editor becomes undefined
@@ -37,19 +38,18 @@ export class More {
         vscode.workspace.onDidChangeTextDocument((p_event) => this._onDocumentChanged(p_event)); // typing and changing body
     }
 
-    public onChangeCollapsedState(p_event: vscode.TreeViewExpansionEvent<PNode>, p_expand: boolean, p_treeView: vscode.TreeView<PNode>): void {
+    public onChangeCollapsedState(p_event: vscode.TreeViewExpansionEvent<PNode>, p_expand: boolean): void {
         this.triggerBodySave(true);
-        if (p_treeView.selection[0] && p_treeView.selection[0] === p_event.element) {
+        if (this._moreTreeView.selection[0] && this._moreTreeView.selection[0] === p_event.element) {
             // * This happens if the tree selection is the same as the expanded/collapsed node: Just have Leo do the same
             // Pass
         } else {
             // * This part only happens if the user clicked on the arrow without trying to select the node
             // this._revealTreeViewNode(p_event.element, { select: true, focus: false }); // No force focus : it breaks collapse/expand when direct parent
-            p_treeView.reveal(p_event.element, { select: true, focus: false });
+            this._moreTreeView.reveal(p_event.element, { select: true, focus: false });
             this.selectNode(p_event.element, true, false);  // not waiting for a .then(...) so not to add any lag
         }
         // * if in leoIntegration send action to Leo to select & expand.
-
     }
 
     public switchDocument(): void {
@@ -74,10 +74,10 @@ export class More {
 
         this.lastSelectedNode = p_node;
 
-        this._tryApplyNodeToBody(p_node, !!p_aside, false);
+        this.applyNodeToBody(p_node, !!p_aside, false);
     }
 
-    private _tryApplyNodeToBody(p_node: PNode, p_aside: boolean, p_showBodyKeepFocus: boolean): Thenable<vscode.TextEditor> {
+    public applyNodeToBody(p_node: PNode, p_aside: boolean, p_showBodyKeepFocus: boolean): Thenable<vscode.TextEditor> {
         this.triggerBodySave(); // can be called directly so trigger body save also even if called in selectNode
         this.lastSelectedNode = p_node;
         if (this._bodyTextDocument) {

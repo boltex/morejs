@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { More } from './more';
 
 /**
  * * Structural node type used by the model.
@@ -55,6 +56,9 @@ export class MoreOutlineProvider implements vscode.TreeDataProvider<PNode> {
     readonly onDidChangeTreeData: vscode.Event<PNode | undefined | null | void> = this._onDidChangeTreeData.event;
 
     private _icons: Icon[];
+
+    public treeView: vscode.TreeView<PNode> | undefined;
+    private more: More | undefined;
 
     // * IMMUTABLE sample test outline structures. Each with predefined 'selected' node.
     public modelId: number;
@@ -142,6 +146,10 @@ export class MoreOutlineProvider implements vscode.TreeDataProvider<PNode> {
         this.model.push(this.model2);
         console.log('Starting MOREJS tree provider');
     }
+    public setTreeView(p_treeView: vscode.TreeView<PNode>, p_more: More): void {
+        this.treeView = p_treeView;
+        this.more = p_more;
+    }
 
     public switchModel() {
         if (this.modelId) {
@@ -158,6 +166,13 @@ export class MoreOutlineProvider implements vscode.TreeDataProvider<PNode> {
 
     public getTreeItem(element: PNode): MoreNode {
         let w_body = this.bodies[element.gnx];
+        if (element.selected && this.treeView) {
+            setTimeout(() => {
+                console.log('Revealing: ', element.gnx);
+                this.treeView!.reveal(element, { select: true, focus: false });
+                this.more!.applyNodeToBody(element, false, false);
+            }, 0);
+        }
         return new MoreNode(
             element.header,
             element.children.length
@@ -183,6 +198,8 @@ export class MoreOutlineProvider implements vscode.TreeDataProvider<PNode> {
     }
 
     public getParent(p_node: PNode): vscode.ProviderResult<PNode> | null {
+        console.log('getParent:', p_node.gnx);
+
         return p_node.parent;
     }
 

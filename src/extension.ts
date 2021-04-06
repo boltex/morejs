@@ -28,11 +28,13 @@ export function activate(context: vscode.ExtensionContext) {
     const moreOutlineProvider = new MoreOutlineProvider(context);
     const moreTreeView = vscode.window.createTreeView('jsOutline', { showCollapseAll: false, treeDataProvider: moreOutlineProvider });
 
-    const moreFileSystem = new JsBodyProvider(moreOutlineProvider);
-    const more = new More(moreOutlineProvider, moreFileSystem);
 
-    moreTreeView.onDidExpandElement((p_event => more.onChangeCollapsedState(p_event, true, moreTreeView)));
-    moreTreeView.onDidCollapseElement((p_event => more.onChangeCollapsedState(p_event, false, moreTreeView)));
+    const moreFileSystem = new JsBodyProvider(moreOutlineProvider);
+    const more = new More(moreOutlineProvider, moreTreeView, moreFileSystem);
+    moreOutlineProvider.setTreeView(moreTreeView, more); // helper pointer
+
+    moreTreeView.onDidExpandElement((p_event => more.onChangeCollapsedState(p_event, true)));
+    moreTreeView.onDidCollapseElement((p_event => more.onChangeCollapsedState(p_event, false)));
 
     subPush(moreTreeView);
     subPush(regFileSys('more', moreFileSystem, { isCaseSensitive: true }));
