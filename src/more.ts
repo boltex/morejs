@@ -20,6 +20,10 @@ export class More {
         this._bodyUri = p_uri;
     }
 
+    private _moreOutlineProvider: MoreOutlineProvider;
+    private _moreTreeView: vscode.TreeView<PNode>;;
+    private _moreFileSystem: JsBodyProvider;
+
     // (should be same as _bodyTextDocument if no multiple gnx body support?)
     private _bodyLastChangedDocument: vscode.TextDocument | undefined; // Only set in _onDocumentChanged WHEN USER TYPES.
 
@@ -27,10 +31,21 @@ export class More {
     private _bodyMainSelectionColumn: vscode.ViewColumn | undefined; // Column of last body 'textEditor' found, set to 1
 
     constructor(
-        private _moreOutlineProvider: MoreOutlineProvider,
-        private _moreTreeView: vscode.TreeView<PNode>,
-        private _moreFileSystem: JsBodyProvider
+        private _context: vscode.ExtensionContext,
+        //private _moreOutlineProvider: MoreOutlineProvider,
+        // private _moreTreeView: vscode.TreeView<PNode>,
+        // private _moreFileSystem: JsBodyProvider
     ) {
+        this._moreOutlineProvider = new MoreOutlineProvider(_context, this);
+        this._moreTreeView = vscode.window.createTreeView('jsOutline', { showCollapseAll: false, treeDataProvider: this._moreOutlineProvider });
+        this._moreTreeView.onDidExpandElement((p_event => this.onChangeCollapsedState(p_event, true)));
+        this._moreTreeView.onDidCollapseElement((p_event => this.onChangeCollapsedState(p_event, false)));
+
+        this._moreFileSystem = new JsBodyProvider(this._moreOutlineProvider);
+
+        this._context.subscriptions.push(this._moreTreeView);
+        this._context.subscriptions.push(vscode.workspace.registerFileSystemProvider('more', this._moreFileSystem, { isCaseSensitive: true }));
+
         vscode.window.onDidChangeActiveTextEditor((p_event) => this.triggerBodySave()); // also fires when the active editor becomes undefined
         vscode.window.onDidChangeTextEditorViewColumn(() => this.triggerBodySave()); // also triggers after drag and drop
         vscode.window.onDidChangeVisibleTextEditors(() => this.triggerBodySave()); // window.visibleTextEditors changed
@@ -50,6 +65,12 @@ export class More {
             this.selectNode(p_event.element, true, false);  // not waiting for a .then(...) so not to add any lag
         }
         // * if in leoIntegration send action to Leo to select & expand.
+    }
+
+
+    public revealTreeViewNode(element: PNode, p_options: { select?: boolean, focus?: boolean }): Thenable<void> {
+        this._moreTreeView.reveal(element, p_options);
+        return Promise.resolve();
     }
 
     public switchDocument(): void {

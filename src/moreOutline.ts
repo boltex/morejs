@@ -57,9 +57,6 @@ export class MoreOutlineProvider implements vscode.TreeDataProvider<PNode> {
 
     private _icons: Icon[];
 
-    public treeView: vscode.TreeView<PNode> | undefined;
-    private more: More | undefined;
-
     // * IMMUTABLE sample test outline structures. Each with predefined 'selected' node.
     public modelId: number;
     public model: PNode[][] = [];
@@ -137,7 +134,10 @@ export class MoreOutlineProvider implements vscode.TreeDataProvider<PNode> {
         '10': 'node10 body',
     };
 
-    constructor(private _context: vscode.ExtensionContext) {
+    constructor(
+        private _context: vscode.ExtensionContext,
+        private _more: More
+    ) {
         this._icons = this._buildNodeIconPaths(_context);
         this.modelId = 0;
         this._buildParents(this.model1);
@@ -145,10 +145,6 @@ export class MoreOutlineProvider implements vscode.TreeDataProvider<PNode> {
         this.model.push(this.model1);
         this.model.push(this.model2);
         console.log('Starting MOREJS tree provider');
-    }
-    public setTreeView(p_treeView: vscode.TreeView<PNode>, p_more: More): void {
-        this.treeView = p_treeView;
-        this.more = p_more;
     }
 
     public switchModel() {
@@ -166,11 +162,10 @@ export class MoreOutlineProvider implements vscode.TreeDataProvider<PNode> {
 
     public getTreeItem(element: PNode): MoreNode {
         let w_body = this.bodies[element.gnx];
-        if (element.selected && this.treeView) {
+        if (element.selected) {
             setTimeout(() => {
-                console.log('Revealing: ', element.gnx);
-                this.treeView!.reveal(element, { select: true, focus: false });
-                this.more!.applyNodeToBody(element, false, false);
+                this._more.revealTreeViewNode(element, { select: true, focus: false });
+                this._more!.applyNodeToBody(element, false, false);
             }, 0);
         }
         return new MoreNode(
@@ -218,28 +213,6 @@ export class MoreOutlineProvider implements vscode.TreeDataProvider<PNode> {
             });
     }
 
-    private _nodeArray(p_children: PNode[]): MoreNode[] {
-        const w_children: MoreNode[] = [];
-        if (p_children && p_children.length) {
-            p_children.forEach((p_node) => {
-                let w_body = this.bodies[p_node.gnx];
-                w_children.push(
-                    new MoreNode(
-                        p_node.header,
-                        p_node.children.length
-                            ? vscode.TreeItemCollapsibleState.Collapsed
-                            : vscode.TreeItemCollapsibleState.None,
-                        p_node,
-                        false,
-                        !!w_body && !!w_body.length,
-                        this._icons
-                    )
-                );
-            });
-        }
-        return w_children;
-    }
-
     /**
      * Recursively set node's parent member.
      * @param p_nodes Children array of nodes to have their parents set recursively.
@@ -248,7 +221,8 @@ export class MoreOutlineProvider implements vscode.TreeDataProvider<PNode> {
     private _buildParents(p_nodes: PNode[], p_parent?: PNode): void {
         p_nodes.forEach(p_node => {
             p_node.parent = p_parent;
-            this._buildParents(p_node.children, p_node);
+            this._buildParents(p_node.children, p_node
+            );
         });
     }
 
