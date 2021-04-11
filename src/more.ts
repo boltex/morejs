@@ -16,7 +16,7 @@ export class More {
         return this._bodyUri;
     }
     set bodyUri(p_uri: vscode.Uri) {
-        this._moreFileSystem.setBodyTime(p_uri);
+        this._moreFileSystem.selectNode(p_uri);
         this._bodyUri = p_uri;
     }
 
