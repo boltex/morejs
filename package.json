@@ -55,43 +55,22 @@
 		"views": {
 			"explorer": [
 				{
-					"id": "jsonOutline",
-					"name": "Json Outline",
-					"when": "jsonOutlineEnabled"
+					"id": "moreOutline",
+					"name": "More Outline",
+					"when": "moreOutlineEnabled"
 				},
 				{
-					"id": "jsOutline",
-					"name": "More Outline",
+					"id": "moreDocuments",
+					"name": "More documents",
 					"when": "moreOutlineEnabled"
 				}
 			]
 		},
-		"viewsWelcome": [
-			{
-				"view": "jsonOutline",
-				"contents": "Select a JSON file to view the outline and edit node labels"
-			}
-		],
+		"viewsWelcome": [],
 		"menus": {
 			"commandPalette": [],
-			"view/title": [
-				{
-					"command": "morejs.refresh",
-					"when": "view == jsonOutline",
-					"group": "navigation"
-				}
-			],
-			"view/item/context": [
-				{
-					"command": "morejs.renameNode",
-					"when": "view == jsonOutline"
-				},
-				{
-					"command": "morejs.refreshNode",
-					"when": "view == jsonOutline",
-					"group": "inline"
-				}
-			]
+			"view/title": [],
+			"view/item/context": []
 		},
 		"resourceLabelFormatters": [
 			{

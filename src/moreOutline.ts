@@ -147,8 +147,10 @@ export class MoreOutlineProvider implements vscode.TreeDataProvider<PNode> {
         console.log('Starting MOREJS tree provider');
     }
 
-    public switchModel() {
-        if (this.modelId) {
+    public switchModel(p_id: number) {
+        console.log('switch model to:', p_id);
+        // Either 1 or 2
+        if (p_id === 1) {
             this.modelId = 0;
         } else {
             this.modelId = 1;

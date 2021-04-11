@@ -22,7 +22,7 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
     private _openedBodiesGnx: string[] = [];
     private _openedBodiesInfo: { [key: string]: BodyTimeInfo } = {};
 
-    constructor(private _jsOutline: MoreOutlineProvider) { }
+    constructor(private _moreOutline: MoreOutlineProvider) { }
 
     public selectNode(p_uri: vscode.Uri) {
         const w_gnx = this._moreUriToStr(p_uri);
@@ -38,7 +38,7 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
     }
 
     public refreshPossibleGnxList(): string[] {
-        return Object.keys(this._jsOutline.bodies);
+        return Object.keys(this._moreOutline.bodies);
     }
 
     public getExpiredGnxList(): string[] {
@@ -73,8 +73,8 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
         const w_gnx = this._moreUriToStr(p_uri);
 
         if (this._openedBodiesGnx.includes(w_gnx)) {
-            console.log("read", p_uri.fsPath, "body", this._jsOutline.bodies[this._moreUriToStr(p_uri)]);
-            return Promise.resolve(Buffer.from(this._jsOutline.bodies[this._moreUriToStr(p_uri)]));
+            console.log("read", p_uri.fsPath, "body", this._moreOutline.bodies[this._moreUriToStr(p_uri)]);
+            return Promise.resolve(Buffer.from(this._moreOutline.bodies[this._moreUriToStr(p_uri)]));
         }
         console.log('COULD NOT READ: ', w_gnx);
 
@@ -91,28 +91,15 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
                     type: vscode.FileType.File,
                     ctime: this._openedBodiesInfo[w_gnx].ctime,
                     mtime: this._openedBodiesInfo[w_gnx].mtime,
-                    // Buffer.byteLength(this._jsOutline.bodies[this._moreUriToStr(p_uri)], 'utf8')
-                    // size: this._jsOutline.bodies[this._moreUriToStr(p_uri)].length
-                    size: Buffer.byteLength(this._jsOutline.bodies[this._moreUriToStr(p_uri)], 'utf8')
+                    size: Buffer.byteLength(this._moreOutline.bodies[this._moreUriToStr(p_uri)], 'utf8')
                 }
             );
         } else {
             console.log("stat ***** NO MORE !!! ", p_uri.fsPath);
-            // FileSystemError.FileNotFound
             throw vscode.FileSystemError.FileNotFound(p_uri);
 
         }
 
-        // return Promise.resolve(
-        //     {
-        //         type: vscode.FileType.File,
-        //         ctime: 0,
-        //         mtime: 0,
-        //         // Buffer.byteLength(this._jsOutline.bodies[this._moreUriToStr(p_uri)], 'utf8')
-        //         // size: this._jsOutline.bodies[this._moreUriToStr(p_uri)].length
-        //         size: Buffer.byteLength(this._jsOutline.bodies[this._moreUriToStr(p_uri)], 'utf8')
-        //     }
-        // );
     }
 
     public watch(p_resource: vscode.Uri): vscode.Disposable {

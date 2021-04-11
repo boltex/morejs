@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { JsBodyProvider } from './moreBody';
+import { MoreDocumentsProvider } from './moreDocuments';
 import { MoreOutlineProvider, PNode } from './moreOutline';
 /**
  * * Orchestrates More implementation into vscode
@@ -21,7 +22,11 @@ export class More {
     }
 
     private _moreOutlineProvider: MoreOutlineProvider;
-    private _moreTreeView: vscode.TreeView<PNode>;;
+    private _moreTreeView: vscode.TreeView<PNode>;
+
+    private _moreDocumentsProvider: MoreDocumentsProvider;
+    private _moreDocumentsTreeView: vscode.TreeView<number>;
+
     private _moreFileSystem: JsBodyProvider;
 
     // (should be same as _bodyTextDocument if no multiple gnx body support?)
@@ -32,18 +37,19 @@ export class More {
 
     constructor(
         private _context: vscode.ExtensionContext,
-        //private _moreOutlineProvider: MoreOutlineProvider,
-        // private _moreTreeView: vscode.TreeView<PNode>,
-        // private _moreFileSystem: JsBodyProvider
     ) {
         this._moreOutlineProvider = new MoreOutlineProvider(_context, this);
-        this._moreTreeView = vscode.window.createTreeView('jsOutline', { showCollapseAll: false, treeDataProvider: this._moreOutlineProvider });
+        this._moreTreeView = vscode.window.createTreeView('moreOutline', { showCollapseAll: false, treeDataProvider: this._moreOutlineProvider });
         this._moreTreeView.onDidExpandElement((p_event => this.onChangeCollapsedState(p_event, true)));
         this._moreTreeView.onDidCollapseElement((p_event => this.onChangeCollapsedState(p_event, false)));
+
+        this._moreDocumentsProvider = new MoreDocumentsProvider();
+        this._moreDocumentsTreeView = vscode.window.createTreeView('moreDocuments', { showCollapseAll: false, treeDataProvider: this._moreDocumentsProvider });
 
         this._moreFileSystem = new JsBodyProvider(this._moreOutlineProvider);
 
         this._context.subscriptions.push(this._moreTreeView);
+        this._context.subscriptions.push(this._moreDocumentsTreeView);
         this._context.subscriptions.push(vscode.workspace.registerFileSystemProvider('more', this._moreFileSystem, { isCaseSensitive: true }));
 
         vscode.window.onDidChangeActiveTextEditor((p_event) => this.triggerBodySave()); // also fires when the active editor becomes undefined
@@ -51,6 +57,11 @@ export class More {
         vscode.window.onDidChangeVisibleTextEditors(() => this.triggerBodySave()); // window.visibleTextEditors changed
         vscode.window.onDidChangeWindowState(() => this.triggerBodySave()); // focus state of the current window changes
         vscode.workspace.onDidChangeTextDocument((p_event) => this._onDocumentChanged(p_event)); // typing and changing body
+
+        //Initialize MORE Documents list to have the first one selected
+        setTimeout(() => {
+            this._moreDocumentsTreeView.reveal(1, { select: true, focus: false, expand: false });
+        }, 0);
     }
 
     public onChangeCollapsedState(p_event: vscode.TreeViewExpansionEvent<PNode>, p_expand: boolean): void {
@@ -73,9 +84,8 @@ export class More {
         return Promise.resolve();
     }
 
-    public switchDocument(): void {
-        console.log('Switch DOCUMENT');
-        this._moreOutlineProvider.switchModel();
+    public switchDocument(p_id: number): void {
+        this._moreOutlineProvider.switchModel(p_id);
         this._moreOutlineProvider.refreshTreeRoot();
     }
 
