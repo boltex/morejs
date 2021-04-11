@@ -9,9 +9,7 @@ export class MoreDocumentsProvider implements vscode.TreeDataProvider<number> {
 
     readonly onDidChangeTreeData: vscode.Event<number | undefined> = this._onDidChangeTreeData.event;
 
-    constructor() {
-        //
-    }
+    constructor() { }
 
     public getTreeItem(element: number): Thenable<vscode.TreeItem> | vscode.TreeItem {
         const w_node = new vscode.TreeItem('More Document' + element.toString());
@@ -32,7 +30,6 @@ export class MoreDocumentsProvider implements vscode.TreeDataProvider<number> {
         }
         return w_children; // Defaults to an empty list of children
     }
-
 
     public getParent(element: number): vscode.ProviderResult<number> {
         // Leo documents are just a list, as such, entries are always child of root, so return null

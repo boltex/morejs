@@ -14,7 +14,6 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
     private _onDidChangeFileEmitter = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
     readonly onDidChangeFile: vscode.Event<vscode.FileChangeEvent[]> = this._onDidChangeFileEmitter.event;
 
-
     // * List of currently opened body panes gnx (from 'watch' & 'dispose' methods)
     private _watchedBodiesGnx: string[] = [];
 
@@ -60,7 +59,6 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
         });
     }
 
-
     public readDirectory(p_uri: vscode.Uri): Thenable<[string, vscode.FileType][]> {
         console.log("readDirectory", p_uri.fsPath);
 
@@ -69,7 +67,6 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
     }
 
     public readFile(p_uri: vscode.Uri): Thenable<Uint8Array> {
-
         const w_gnx = this._moreUriToStr(p_uri);
 
         if (this._openedBodiesGnx.includes(w_gnx)) {
@@ -97,7 +94,6 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
         } else {
             console.log("stat ***** NO MORE !!! ", p_uri.fsPath);
             throw vscode.FileSystemError.FileNotFound(p_uri);
-
         }
 
     }

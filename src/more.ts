@@ -2,11 +2,11 @@ import * as vscode from 'vscode';
 import { JsBodyProvider } from './moreBody';
 import { MoreDocumentsProvider } from './moreDocuments';
 import { MoreOutlineProvider, PNode } from './moreOutline';
+
 /**
  * * Orchestrates More implementation into vscode
  */
 export class More {
-
 
     // Selected node set in tree model or last selected by user
     public lastSelectedNode: PNode | undefined;
@@ -77,7 +77,6 @@ export class More {
         }
         // * if in leoIntegration send action to Leo to select & expand.
     }
-
 
     public revealTreeViewNode(element: PNode, p_options: { select?: boolean, focus?: boolean }): Thenable<void> {
         this._moreTreeView.reveal(element, p_options);

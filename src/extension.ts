@@ -7,13 +7,13 @@ import { More } from './more';
 export function activate(context: vscode.ExtensionContext) {
     console.log('Starting morejs activation');
 
-    // SHORTCUTS *******************************************************************************
+    // * SHORTCUTS
     function subPush(p_disposable: vscode.Disposable) {
         context.subscriptions.push(p_disposable);
     }
     const regCmd = vscode.commands.registerCommand;
 
-    // MOREJS IMPLEMENTATION *********************************************************
+    // * MOREJS IMPLEMENTATION
     const more = new More(context);
 
     subPush(regCmd('morejs.selectNode', (p_node: PNode) => more.selectNode(p_node))); // *

@@ -186,17 +186,14 @@ export class MoreOutlineProvider implements vscode.TreeDataProvider<PNode> {
         if (element) {
             console.log('REFRESH a node');
             return element.children;
-            //return Promise.resolve(this._nodeArray(element.pnode.children));
         } else {
             console.log('REFRESH Root!!', this.modelId);
             return this.model[this.modelId];
-            //return Promise.resolve(this._nodeArray(this.model[this.modelId]));
         }
     }
 
     public getParent(p_node: PNode): vscode.ProviderResult<PNode> | null {
         console.log('getParent:', p_node.gnx);
-
         return p_node.parent;
     }
 
