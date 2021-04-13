@@ -9,7 +9,7 @@ import { MoreOutlineProvider, PNode } from './moreOutline';
 export class More {
 
     // Selected node set in tree model or last selected by user
-    public lastSelectedNode: PNode | undefined;
+    public lastSelectedNode: PNode | undefined; // * LEOINTEG: this has a setter getter to change context flags (marked/unmarked)
 
     // Body global state variables
     private _bodyUri: vscode.Uri = vscode.Uri.parse('more:/');
@@ -17,7 +17,7 @@ export class More {
         return this._bodyUri;
     }
     set bodyUri(p_uri: vscode.Uri) {
-        this._moreFileSystem.selectNode(p_uri);
+        this._moreFileSystem.setBodyTime(p_uri); // * LEOINTEG: this is called 'setBodyTime'
         this._bodyUri = p_uri;
     }
 
@@ -73,7 +73,7 @@ export class More {
             // * This part only happens if the user clicked on the arrow without trying to select the node
             // this._revealTreeViewNode(p_event.element, { select: true, focus: false }); // No force focus : it breaks collapse/expand when direct parent
             this._moreTreeView.reveal(p_event.element, { select: true, focus: false });
-            this.selectNode(p_event.element, true, false);  // not waiting for a .then(...) so not to add any lag
+            this.selectTreeNode(p_event.element, true, false);  // not waiting for a .then(...) so not to add any lag
         }
         // * if in leoIntegration send action to Leo to select & expand.
     }
@@ -83,6 +83,7 @@ export class More {
         return Promise.resolve();
     }
 
+    // * LEOINTEG: This is handled by the leoDocuments tree and switch leo-documents methods
     public switchDocument(p_id: number): void {
         this._moreOutlineProvider.switchModel(p_id);
         this._moreOutlineProvider.refreshTreeRoot();
@@ -93,7 +94,7 @@ export class More {
      * @returns a promise resolving on a text editor of it's body pane.
      * TODO : Fix undefined return value to only return the promise to a text editor.
      */
-    public selectNode(p_node: PNode, p_internalCall?: boolean, p_aside?: boolean): Thenable<vscode.TextEditor> | undefined {
+    public selectTreeNode(p_node: PNode, p_internalCall?: boolean, p_aside?: boolean): Thenable<vscode.TextEditor> | undefined {
         console.log('selectNode GNX: ', p_node.gnx);
         this.triggerBodySave();
 

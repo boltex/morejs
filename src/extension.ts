@@ -16,7 +16,7 @@ export function activate(context: vscode.ExtensionContext) {
     // * MOREJS IMPLEMENTATION
     const more = new More(context);
 
-    subPush(regCmd('morejs.selectNode', (p_node: PNode) => more.selectNode(p_node))); // *
+    subPush(regCmd('morejs.selectNode', (p_node: PNode) => more.selectTreeNode(p_node))); // *
 
     subPush(regCmd('morejs.openMoreDocument', (p_id: number) => more.switchDocument(p_id))); // *
 

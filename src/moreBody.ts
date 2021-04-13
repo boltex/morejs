@@ -23,7 +23,7 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
 
     constructor(private _moreOutline: MoreOutlineProvider) { }
 
-    public selectNode(p_uri: vscode.Uri) {
+    public setBodyTime(p_uri: vscode.Uri) {
         const w_gnx = this._moreUriToStr(p_uri);
         if (!this._openedBodiesGnx.includes(w_gnx)) {
             this._openedBodiesGnx.push(w_gnx);
@@ -34,29 +34,6 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
             ctime: new Date().getTime(),
             mtime: new Date().getTime()
         };
-    }
-
-    public refreshPossibleGnxList(): string[] {
-        return Object.keys(this._moreOutline.bodies);
-    }
-
-    public getExpiredGnxList(): string[] {
-        const w_possibleGnxList = this.refreshPossibleGnxList();
-        const w_gnxToClose: string[] = [];
-        this._watchedBodiesGnx.forEach(p_openedGnx => {
-            if (!w_possibleGnxList.includes(p_openedGnx)) {
-                w_gnxToClose.push(p_openedGnx);
-            }
-        });
-        this.fireDeleteExpiredGnx(w_gnxToClose); // ! DELETE NOW ?
-        return w_gnxToClose;
-    }
-
-    public fireDeleteExpiredGnx(p_gnxList: string[]): void {
-        p_gnxList.forEach(p_gnx => {
-            const w_uri: vscode.Uri = vscode.Uri.parse("more:/" + p_gnx);
-            this._fireSoon({ uri: w_uri, type: vscode.FileChangeType.Deleted });
-        });
     }
 
     public readDirectory(p_uri: vscode.Uri): Thenable<[string, vscode.FileType][]> {
