@@ -16,11 +16,13 @@ export function activate(context: vscode.ExtensionContext) {
     // * MOREJS IMPLEMENTATION
     const more = new More(context);
 
-    subPush(regCmd('morejs.selectNode', (p_node: PNode) => more.selectTreeNode(p_node))); // *
+    subPush(regCmd('morejs.helloWorld', () => more.test()));
 
-    subPush(regCmd('morejs.openMoreDocument', (p_id: number) => more.switchDocument(p_id))); // *
+    subPush(regCmd('morejs.selectNode', (p_node: PNode) => more.selectTreeNode(p_node)));
 
-    vscode.commands.executeCommand('setContext', 'moreOutlineEnabled', true); // *
+    subPush(regCmd('morejs.openMoreDocument', (p_id: number) => more.switchDocument(p_id)));
+
+    vscode.commands.executeCommand('setContext', 'moreOutlineEnabled', true);
 
     console.log('Finished activating morejs');
 }

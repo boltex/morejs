@@ -31,6 +31,7 @@ export class More {
 
     // (should be same as _bodyTextDocument if no multiple gnx body support?)
     private _bodyLastChangedDocument: vscode.TextDocument | undefined; // Only set in _onDocumentChanged WHEN USER TYPES.
+    private _bodyPreviewMode: boolean = true;
 
     private _bodyTextDocument: vscode.TextDocument | undefined; // Set when selected in tree by user, or opening a 'more scheme' file in showBody. and by _locateOpenedBody.
     private _bodyMainSelectionColumn: vscode.ViewColumn | undefined; // Column of last body 'textEditor' found, set to 1
@@ -117,9 +118,7 @@ export class More {
                 if (this.bodyUri.fsPath.substr(1) !== p_node.gnx) {
                     return this._bodyTextDocument.save()
                         .then(() => {
-                            return this._switchBody(p_node.gnx);
-                        }).then(() => {
-                            return this.showBody(p_aside, p_showBodyKeepFocus);
+                            return this._switchBody(p_node.gnx, p_aside, p_showBodyKeepFocus);
                         });
                 }
             }
@@ -130,49 +129,57 @@ export class More {
         return this.showBody(p_aside, p_showBodyKeepFocus);
     }
 
-    private _switchBody(p_newGnx: string): Thenable<boolean> {
-
-        console.log('switchBody to ' + p_newGnx);
+    private _switchBody(p_newGnx: string, p_aside: boolean, p_preserveFocus?: boolean): Thenable<vscode.TextEditor> {
 
         const w_oldUri: vscode.Uri = this.bodyUri;
 
-        const w_edit = new vscode.WorkspaceEdit();
-
-        // * Set timestamps ?
+        // ? Set timestamps ?
         // this._leoFileSystem.setRenameTime(p_newGnx);
 
+        const w_edit = new vscode.WorkspaceEdit();
         w_edit.deleteFile(w_oldUri, { ignoreIfNotExists: true });
 
-        // Promise to Delete first sync (as thenable),
-        // tagged along with automatically removeFromRecentlyOpened in parallel
-        return vscode.workspace.applyEdit(w_edit)
-            .then(() => {
-                // Set new uri and remove from 'Recently opened'
-                this.bodyUri = vscode.Uri.parse('more:/' + p_newGnx);
-                // async, so don't wait for this to finish
-                if (w_oldUri.fsPath !== this.bodyUri.fsPath) {
-                    vscode.commands.executeCommand('vscode.removeFromRecentlyOpened', w_oldUri.path);
-                }
-                return Promise.resolve(true); // Resolving right away
-            });
+        if (this._bodyPreviewMode) {
+            // just show in same column and delete after
+            this.bodyUri = vscode.Uri.parse('more:/' + p_newGnx);
+            const q_showBody = this.showBody(p_aside, p_preserveFocus);
+            vscode.commands.executeCommand('vscode.removeFromRecentlyOpened', w_oldUri.path);
+            return q_showBody;
+        } else {
+            console.log('gotta delete');
+
+            // Gotta delete to close all and re-open, so:
+            // Promise to Delete first, synchronously (as thenable),
+            // tagged along with automatically removeFromRecentlyOpened in parallel
+            return vscode.workspace.applyEdit(w_edit)
+                .then(() => {
+                    // Set new uri and remove from 'Recently opened'
+                    this._bodyPreviewMode = true;
+                    this.bodyUri = vscode.Uri.parse('more:/' + p_newGnx);
+                    // async, so don't wait for this to finish
+                    if (w_oldUri.fsPath !== this.bodyUri.fsPath) {
+                        vscode.commands.executeCommand('vscode.removeFromRecentlyOpened', w_oldUri.path);
+                    }
+                    return this.showBody(p_aside, p_preserveFocus);
+                });
+        }
     }
 
     public showBody(p_aside: boolean, p_preserveFocus?: boolean): Thenable<vscode.TextEditor> {
-        console.log('showBODY!');
-
-        return Promise.resolve(vscode.workspace.openTextDocument(this.bodyUri)).then((p_document) => {
-            this._bodyTextDocument = p_document;
-            const w_showOptions: vscode.TextDocumentShowOptions = {
-                viewColumn: p_aside ? vscode.ViewColumn.Beside : this._bodyMainSelectionColumn,
-                preserveFocus: false,
-                preview: true,
-            };
-            return vscode.window
-                .showTextDocument(this._bodyTextDocument, w_showOptions)
-                .then((w_bodyEditor) => {
-                    return Promise.resolve(w_bodyEditor);
-                });
-        });
+        return vscode.workspace.openTextDocument(this.bodyUri)
+            .then((p_document) => {
+                this._bodyTextDocument = p_document;
+                const w_showOptions: vscode.TextDocumentShowOptions = {
+                    viewColumn: p_aside ? vscode.ViewColumn.Beside : this._bodyMainSelectionColumn,
+                    preserveFocus: false,
+                    preview: true // ! THIS DOES NOT CHANGE A NON-DIRTY TEXT DOCUMENT BACK TO PREVIEW MODE
+                };
+                return vscode.window
+                    .showTextDocument(this._bodyTextDocument, w_showOptions)
+                    .then((w_bodyEditor) => {
+                        return Promise.resolve(w_bodyEditor);
+                    });
+            });
     }
 
     private _locateOpenedBody(p_gnx: string): boolean {
@@ -193,8 +200,6 @@ export class More {
         p_document: vscode.TextDocument,
         p_forcedVsCodeSave?: boolean
     ): Thenable<boolean> {
-        console.log('SAVE BODY BACK TO NODE!');
-
         this._moreOutlineProvider.bodies[p_document.uri.fsPath.substr(1)] = p_document.getText();
 
         if (p_forcedVsCodeSave) {
@@ -212,20 +217,37 @@ export class More {
         } else {
             return Promise.resolve(false);
         }
-
-        //  else {
-        // 	_bodyLastChangedDocument = undefined;
-        // 	return _bodySaveSelection(); // not dirty so save cursor selection only
-        // }
     }
 
     private _onDocumentChanged(p_event: vscode.TextDocumentChangeEvent) {
         // ".length" check necessary, see https://github.com/microsoft/vscode/issues/50344
         if (this.lastSelectedNode && p_event.contentChanges.length && p_event.document.uri.scheme === 'more') {
-            console.log('MORE DOCUMENT EDITED!');
             // * There was an actual change on a Leo Body by the user
+            this._bodyPreviewMode = false;
             this._bodyLastChangedDocument = p_event.document;
-
         }
     }
+
+    public test(): void {
+        console.log('test save !!', this.bodyUri.fsPath);
+        vscode.window.showInformationMessage("Test save!! " + this.bodyUri.fsPath);
+
+        if (this._bodyTextDocument) {
+            this.triggerBodySave(true)
+                .then(() => {
+                    const w_showOptions: vscode.TextDocumentShowOptions = {
+                        viewColumn: this._bodyMainSelectionColumn,
+                        preserveFocus: false,
+                        preview: true,
+                    };
+                    vscode.window.showTextDocument(this._bodyTextDocument!, w_showOptions).then((p_editor: vscode.TextEditor) => {
+                        console.log('done reopening');
+
+
+                    });
+
+                });
+        }
+    }
+
 }
