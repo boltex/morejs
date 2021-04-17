@@ -28,7 +28,7 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
         if (!this._openedBodiesGnx.includes(w_gnx)) {
             this._openedBodiesGnx.push(w_gnx);
         }
-        console.log('Selected', w_gnx, ' total:', this._openedBodiesGnx.length);
+        console.log('Selected', w_gnx, ', _openedBodiesGnx Total:', this._openedBodiesGnx.length);
 
         this._openedBodiesInfo[w_gnx] = {
             ctime: new Date().getTime(),
@@ -59,7 +59,7 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
         const w_gnx = this._moreUriToStr(p_uri);
 
         if (this._openedBodiesGnx.includes(w_gnx)) {
-            console.log("stat ***** OK", p_uri.fsPath);
+            console.log("stat OK", p_uri.fsPath);
             return Promise.resolve(
                 {
                     type: vscode.FileType.File,
@@ -79,17 +79,17 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
         const w_gnx = this._moreUriToStr(p_resource);
 
         if (!this._watchedBodiesGnx.includes(w_gnx)) {
-            console.log('MORE fs watch put in _openedBodiesGnx:', p_resource.fsPath);
+            console.log('MORE fs watch put in _watchedBodiesGnx:', p_resource.fsPath, " total:", this._watchedBodiesGnx.length);
             this._watchedBodiesGnx.push(w_gnx); // add gnx
         } else {
-            console.warn('MORE fs watch: already in _openedBodiesGnx:', p_resource.fsPath);
+            console.warn('MORE fs watch: already in _watchedBodiesGnx:', p_resource.fsPath, " total:", this._watchedBodiesGnx.length);
 
         }
         return new vscode.Disposable(() => {
             const w_position = this._watchedBodiesGnx.indexOf(w_gnx); // find and remove it
             if (w_position > -1) {
-                console.log('MORE fs removed from _openedBodiesGnx: ', w_gnx);
                 this._watchedBodiesGnx.splice(w_position, 1);
+                console.log('MORE fs removed from _watchedBodiesGnx: ', w_gnx, " total:", this._watchedBodiesGnx.length);
             }
         });
     }
@@ -109,12 +109,12 @@ export class JsBodyProvider implements vscode.FileSystemProvider {
     }
 
     public delete(p_uri: vscode.Uri): void {
-        console.log("delete", p_uri.fsPath);
         const w_gnx = this._moreUriToStr(p_uri);
 
         if (this._openedBodiesGnx.includes(w_gnx)) {
             this._openedBodiesGnx.splice(this._openedBodiesGnx.indexOf(w_gnx), 1);
             delete this._openedBodiesInfo[w_gnx];
+            console.log("deleted", p_uri.fsPath, 'openedBodiesGnx Total:', this._openedBodiesGnx.length);
         }
 
         let w_dirname = p_uri.with({ path: path.posix.dirname(p_uri.path) }); // dirname is just a slash "/"

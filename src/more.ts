@@ -53,16 +53,45 @@ export class More {
         this._context.subscriptions.push(this._moreDocumentsTreeView);
         this._context.subscriptions.push(vscode.workspace.registerFileSystemProvider('more', this._moreFileSystem, { isCaseSensitive: true }));
 
-        vscode.window.onDidChangeActiveTextEditor((p_event) => this.triggerBodySave()); // also fires when the active editor becomes undefined
-        vscode.window.onDidChangeTextEditorViewColumn(() => this.triggerBodySave()); // also triggers after drag and drop
-        vscode.window.onDidChangeVisibleTextEditors(() => this.triggerBodySave()); // window.visibleTextEditors changed
-        vscode.window.onDidChangeWindowState(() => this.triggerBodySave()); // focus state of the current window changes
+        // TODO: USE NEXT 4 LINES TO MAKE SURE TO CLOSE/DELETE OLD BODIES (via ctrl+t, etc.)
+        vscode.window.onDidChangeActiveTextEditor((p_event) => this.changedActiveTextEditor(p_event)); // also fires when the active editor becomes undefined
+        vscode.window.onDidChangeTextEditorViewColumn((p_event) => this.changedTextEditorViewColumn(p_event)); // also triggers after drag and drop
+        vscode.window.onDidChangeVisibleTextEditors((p_event) => this.changedVisibleTextEditors(p_event)); // window.visibleTextEditors changed
+        vscode.window.onDidChangeWindowState((p_event) => this.changedWindowState(p_event)); // focus state of the current window changes
+
         vscode.workspace.onDidChangeTextDocument((p_event) => this._onDocumentChanged(p_event)); // typing and changing body
 
         //Initialize MORE Documents list to have the first one selected
         setTimeout(() => {
             this._moreDocumentsTreeView.reveal(1, { select: true, focus: false, expand: false });
         }, 0);
+    }
+
+    public changedActiveTextEditor(p_event: vscode.TextEditor | undefined): void {
+        if (p_event && p_event.document.uri.scheme === 'more') {
+            console.log('changedActiveTextEditor: gnx', p_event.document.uri.fsPath);
+        }
+        this.triggerBodySave();
+    }
+    public changedTextEditorViewColumn(p_event: vscode.TextEditorViewColumnChangeEvent): void {
+        if (p_event && p_event.textEditor.document.uri.scheme === 'more') {
+            console.log('changedTextEditorViewColumn: gnx', p_event.textEditor.document.uri.fsPath);
+        }
+        this.triggerBodySave();
+    }
+    public changedVisibleTextEditors(p_event: vscode.TextEditor[]): void {
+        if (p_event && p_event.length) {
+            p_event.forEach(p_textEditor => {
+                if (p_textEditor && p_textEditor.document.uri.scheme === 'more') {
+                    console.log('changedVisibleTextEditors: gnx', p_textEditor.document.uri.fsPath);
+                }
+            });
+        }
+        this.triggerBodySave();
+    }
+    public changedWindowState(p_event: vscode.WindowState): void {
+        // no other action
+        this.triggerBodySave();
     }
 
     public onChangeCollapsedState(p_event: vscode.TreeViewExpansionEvent<PNode>, p_expand: boolean): void {
@@ -96,7 +125,6 @@ export class More {
      * TODO : Fix undefined return value to only return the promise to a text editor.
      */
     public selectTreeNode(p_node: PNode, p_internalCall?: boolean, p_aside?: boolean): Thenable<vscode.TextEditor> | undefined {
-        console.log('selectNode GNX: ', p_node.gnx);
         this.triggerBodySave();
 
         if (p_node === this.lastSelectedNode) {
@@ -146,8 +174,6 @@ export class More {
             vscode.commands.executeCommand('vscode.removeFromRecentlyOpened', w_oldUri.path);
             return q_showBody;
         } else {
-            console.log('gotta delete');
-
             // Gotta delete to close all and re-open, so:
             // Promise to Delete first, synchronously (as thenable),
             // tagged along with automatically removeFromRecentlyOpened in parallel
@@ -177,6 +203,9 @@ export class More {
                 return vscode.window
                     .showTextDocument(this._bodyTextDocument, w_showOptions)
                     .then((w_bodyEditor) => {
+                        if (w_bodyEditor.viewColumn) {
+                            this._bodyMainSelectionColumn = w_bodyEditor.viewColumn;
+                        }
                         return Promise.resolve(w_bodyEditor);
                     });
             });
