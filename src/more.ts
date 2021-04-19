@@ -34,7 +34,7 @@ export class More {
     private _bodyPreviewMode: boolean = true;
 
     private _bodyTextDocument: vscode.TextDocument | undefined; // Set when selected in tree by user, or opening a 'more scheme' file in showBody. and by _locateOpenedBody.
-    private _bodyMainSelectionColumn: vscode.ViewColumn | undefined; // Column of last body 'textEditor' found, set to 1
+    private _bodyMainSelectionColumn: vscode.ViewColumn | undefined = 1; // Column of last body 'textEditor' found, set to 1
 
     constructor(
         private _context: vscode.ExtensionContext,
@@ -54,12 +54,12 @@ export class More {
         this._context.subscriptions.push(vscode.workspace.registerFileSystemProvider('more', this._moreFileSystem, { isCaseSensitive: true }));
 
         // Windows 'onDidChange' events are used to (re)close extraneous bodies
-        vscode.window.onDidChangeActiveTextEditor((p_event) => this.changedActiveTextEditor(p_event)); // Also fires when the active editor becomes undefined
-        vscode.window.onDidChangeTextEditorViewColumn((p_event) => this.changedTextEditorViewColumn(p_event)); // Also triggers after drag and drop
-        vscode.window.onDidChangeVisibleTextEditors((p_event) => this.changedVisibleTextEditors(p_event)); // Window.visibleTextEditors changed
-        vscode.window.onDidChangeWindowState((p_event) => this.changedWindowState(p_event)); // Focus state of the current window changes
+        vscode.window.onDidChangeActiveTextEditor((p_editor) => this.changedActiveTextEditor(p_editor)); // Also fires when the active editor becomes undefined
+        vscode.window.onDidChangeTextEditorViewColumn((p_columnChangeEvent) => this.changedTextEditorViewColumn(p_columnChangeEvent)); // Also triggers after drag and drop
+        vscode.window.onDidChangeVisibleTextEditors((p_editors) => this.changedVisibleTextEditors(p_editors)); // Window.visibleTextEditors changed
+        vscode.window.onDidChangeWindowState((p_windowState) => this.changedWindowState(p_windowState)); // Focus state of the current window changes
 
-        vscode.workspace.onDidChangeTextDocument((p_event) => this._onDocumentChanged(p_event)); // Typing and changing body
+        vscode.workspace.onDidChangeTextDocument((p_textDocumentChange) => this._onDocumentChanged(p_textDocumentChange)); // Typing and changing body
 
         // Initialize MORE Documents list to have the first one selected
         setTimeout(() => {
@@ -77,29 +77,44 @@ export class More {
         vscode.commands.executeCommand('vscode.removeFromRecentlyOpened', p_textEditor.document.uri.path);
     }
 
-    public changedActiveTextEditor(p_event: vscode.TextEditor | undefined): void {
-        if (p_event && p_event.document.uri.scheme === 'more') {
-            console.log('changedActiveTextEditor: gnx', p_event.document.uri.fsPath);
-            if (this.bodyUri.fsPath !== p_event.document.uri.fsPath) {
-                this._hideDeleteBody(p_event);
+    private checkPreviewMode(p_editor: vscode.TextEditor): void {
+        // if selected gnx but in another column
+        if (
+            p_editor.document.uri.fsPath === this.bodyUri.fsPath &&
+            p_editor.viewColumn !== this._bodyMainSelectionColumn
+        ) {
+            console.log('************NO MORE PREVIEW!!');
+            this._bodyPreviewMode = false;
+            this._bodyMainSelectionColumn = p_editor.viewColumn;
+        }
+    }
+
+    public changedActiveTextEditor(p_editor: vscode.TextEditor | undefined): void {
+        if (p_editor && p_editor.document.uri.scheme === 'more') {
+            console.log('changedActiveTextEditor: gnx', p_editor.document.uri.fsPath);
+            if (this.bodyUri.fsPath !== p_editor.document.uri.fsPath) {
+                this._hideDeleteBody(p_editor);
             }
+            this.checkPreviewMode(p_editor);
         }
         this.triggerBodySave(true);
     }
-    public changedTextEditorViewColumn(p_event: vscode.TextEditorViewColumnChangeEvent): void {
-        if (p_event && p_event.textEditor.document.uri.scheme === 'more') {
-            console.log('changedTextEditorViewColumn: gnx', p_event.textEditor.document.uri.fsPath);
+    public changedTextEditorViewColumn(p_columnChangeEvent: vscode.TextEditorViewColumnChangeEvent): void {
+        if (p_columnChangeEvent && p_columnChangeEvent.textEditor.document.uri.scheme === 'more') {
+            console.log('changedTextEditorViewColumn: gnx', p_columnChangeEvent.textEditor.document.uri.fsPath);
+            this.checkPreviewMode(p_columnChangeEvent.textEditor);
         }
         this.triggerBodySave(true);
     }
-    public changedVisibleTextEditors(p_event: vscode.TextEditor[]): void {
-        if (p_event && p_event.length) {
-            p_event.forEach(p_textEditor => {
+    public changedVisibleTextEditors(p_editors: vscode.TextEditor[]): void {
+        if (p_editors && p_editors.length) {
+            p_editors.forEach(p_textEditor => {
                 if (p_textEditor && p_textEditor.document.uri.scheme === 'more') {
                     console.log('changedVisibleTextEditors: gnx', p_textEditor.document.uri.fsPath);
                     if (this.bodyUri.fsPath !== p_textEditor.document.uri.fsPath) {
                         this._hideDeleteBody(p_textEditor);
                     }
+                    this.checkPreviewMode(p_textEditor);
                 }
             });
         }
@@ -141,10 +156,12 @@ export class More {
      * TODO : Fix undefined return value to only return the promise to a text editor.
      */
     public selectTreeNode(p_node: PNode, p_internalCall?: boolean, p_aside?: boolean): Thenable<vscode.TextEditor> | undefined {
+        console.log('selectTreeNode: this._bodyMainSelectionColumn', this._bodyMainSelectionColumn);
+
         this.triggerBodySave();
 
         if (p_node === this.lastSelectedNode) {
-            this._locateOpenedBody(p_node.gnx);
+            this._locateOpenedBody(p_node.gnx); // LOCATE NEW
             return this.showBody(!!p_aside); // Voluntary exit
         }
 
@@ -157,9 +174,12 @@ export class More {
         this.triggerBodySave(); // can be called directly so trigger body save also even if called in selectNode
         this.lastSelectedNode = p_node;
         if (this._bodyTextDocument) {
+            // LOCATE NEW ONE
             if (this._bodyTextDocument.isClosed || !this._locateOpenedBody(p_node.gnx)) {
                 // if needs switching
                 if (this.bodyUri.fsPath.substr(1) !== p_node.gnx) {
+                    this._locateOpenedBody(this.bodyUri.fsPath.substr(1)); // * LOCATE OLD *
+
                     return this._bodyTextDocument.save()
                         .then(() => {
                             return this._switchBody(p_node.gnx, p_aside, p_showBodyKeepFocus);
@@ -174,6 +194,10 @@ export class More {
     }
 
     private _switchBody(p_newGnx: string, p_aside: boolean, p_preserveFocus?: boolean): Thenable<vscode.TextEditor> {
+
+        console.log('findGnxColumn', this.findUriColumn(this.bodyUri));
+        console.log('_switchBody: this._bodyMainSelectionColumn', this._bodyMainSelectionColumn);
+
 
         const w_oldUri: vscode.Uri = this.bodyUri;
 
@@ -190,6 +214,8 @@ export class More {
             vscode.commands.executeCommand('vscode.removeFromRecentlyOpened', w_oldUri.path);
             return q_showBody;
         } else {
+            console.log('HAD TO DELETE FIRST!!');
+
             // Gotta delete to close all and re-open, so:
             // Promise to Delete first, synchronously (as thenable),
             // tagged along with automatically removeFromRecentlyOpened in parallel
@@ -208,6 +234,8 @@ export class More {
     }
 
     public showBody(p_aside: boolean, p_preserveFocus?: boolean): Thenable<vscode.TextEditor> {
+        console.log('showBody: this._bodyMainSelectionColumn', this._bodyMainSelectionColumn);
+
         return vscode.workspace.openTextDocument(this.bodyUri)
             .then((p_document) => {
                 this._bodyTextDocument = p_document;
@@ -229,16 +257,42 @@ export class More {
 
     private _locateOpenedBody(p_gnx: string): boolean {
         let w_found = false;
-        this._bodyMainSelectionColumn = 1;
+        // this._bodyMainSelectionColumn = 1;
         // * Only gets to visible editors, not every tab per editor
         vscode.window.visibleTextEditors.forEach(p_textEditor => {
             if (p_textEditor.document.uri.fsPath.substr(1) === p_gnx) {
+                if (!w_found) {
+                    this._bodyTextDocument = p_textEditor.document;
+                    this._bodyMainSelectionColumn = p_textEditor.viewColumn;
+                }
                 w_found = true;
-                this._bodyTextDocument = p_textEditor.document;
-                this._bodyMainSelectionColumn = p_textEditor.viewColumn;
             }
         });
+
+
+        console.log('_locateOpenedBody _bodyMainSelectionColumn', this._bodyMainSelectionColumn);
+
         return w_found;
+    }
+
+    private findUriColumn(p_uri: vscode.Uri): vscode.ViewColumn | undefined {
+        let w_column: vscode.ViewColumn | undefined;
+        vscode.window.visibleTextEditors.forEach(p_textEditor => {
+            if (p_textEditor.document.uri.fsPath === p_uri.fsPath) {
+                w_column = p_textEditor.viewColumn;
+            }
+        });
+        return w_column;
+    }
+
+    private findGnxColumn(p_gnx: string): vscode.ViewColumn | undefined {
+        let w_column: vscode.ViewColumn | undefined;
+        vscode.window.visibleTextEditors.forEach(p_textEditor => {
+            if (p_textEditor.document.uri.fsPath.substr(1) === p_gnx) {
+                w_column = p_textEditor.viewColumn;
+            }
+        });
+        return w_column;
     }
 
     private _bodySaveDocument(
